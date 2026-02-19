@@ -130,6 +130,95 @@
             }
         }
 
+        public function clear()
+        {
+            if (!$this->session->userdata('loggedin')) {
+                redirect(base_url('signin/index'));
+            }
+
+            $schoolYearID = $this->session->userdata('defaultschoolyearID');
+            $this->_userAlert();
+            $this->_alertMessage();
+            $this->_alertNotice($schoolYearID);
+            $this->_alertEvent($schoolYearID);
+            $this->_alertHoliday($schoolYearID);
+            $alerts = $this->_alertOrder($this->_alert);
+
+            $batch = [];
+            foreach ($alerts as $alert) {
+                $identity = $this->_alertIdentity($alert);
+                if (customCompute($identity)) {
+                    $batch[] = [
+                        'itemID'     => $identity['itemID'],
+                        'userID'     => $this->session->userdata("loginuserID"),
+                        'usertypeID' => $this->session->userdata('usertypeID'),
+                        'itemname'   => $identity['itemname']
+                    ];
+                }
+            }
+
+            if (customCompute($batch)) {
+                $this->alert_m->insert_batch_alert($batch);
+            }
+
+            redirect(base_url('dashboard/index'));
+        }
+
+        public function read()
+        {
+            if (!$this->session->userdata('loggedin')) {
+                redirect(base_url('signin/index'));
+            }
+
+            $type = htmlentities((string) escapeString($this->uri->segment(3)));
+            $id   = htmlentities((string) escapeString($this->uri->segment(4)));
+            if ($type && (int) $id) {
+                $alert = $this->alert_m->get_single_alert([
+                    'itemID'     => $id,
+                    "userID"     => $this->session->userdata("loginuserID"),
+                    'usertypeID' => $this->session->userdata('usertypeID'),
+                    'itemname'   => $type
+                ]);
+                if (!customCompute($alert)) {
+                    $this->alert_m->insert_alert([
+                        'itemID'     => $id,
+                        "userID"     => $this->session->userdata("loginuserID"),
+                        'usertypeID' => $this->session->userdata('usertypeID'),
+                        'itemname'   => $type
+                    ]);
+                }
+            }
+            redirect(base_url('dashboard/index'));
+        }
+
+        public function dismiss()
+        {
+            if (!$this->session->userdata('loggedin')) {
+                $this->_json(['ok' => false]);
+                return;
+            }
+
+            $type = htmlentities((string) escapeString($this->uri->segment(3)));
+            $id   = htmlentities((string) escapeString($this->uri->segment(4)));
+            if ($type && (int) $id) {
+                $alert = $this->alert_m->get_single_alert([
+                    'itemID'     => $id,
+                    "userID"     => $this->session->userdata("loginuserID"),
+                    'usertypeID' => $this->session->userdata('usertypeID'),
+                    'itemname'   => $type
+                ]);
+                if (!customCompute($alert)) {
+                    $this->alert_m->insert_alert([
+                        'itemID'     => $id,
+                        "userID"     => $this->session->userdata("loginuserID"),
+                        'usertypeID' => $this->session->userdata('usertypeID'),
+                        'itemname'   => $type
+                    ]);
+                }
+            }
+            $this->_json(['ok' => true]);
+        }
+
         private function _alertOrder( $alerts )
         {
             $i          = 0;
@@ -248,16 +337,16 @@
                     $pusher = $this->_pusher($alert);
                     $html   .= '<li>';
                     $html   .= "<a href=" . base_url($pusher->link) . ">";
-                    $html   .= "<div class='pull-left'>";
-                    $html   .= "<img class='img-circle' src='" . $pusher->photo . "'>";
+                    $html   .= "<div class='pull-left hatchers-notify-icon " . $pusher->iconClass . "'>";
+                    $html   .= "<i class='fa " . $pusher->icon . "'></i>";
                     $html   .= "</div>";
-                    $html   .= "<h4>";
-                    $html   .= strip_tags((string) $pusher->title);
-                    $html   .= "<small><i class='fa fa-clock-o'></i> ";
-                    $html   .= $pusher->date;
-                    $html   .= "</small>";
-                    $html   .= "</h4>";
-                    $html   .= "<p>" . strip_tags((string) $pusher->description) . "</p>";
+                    $html   .= "<div class='notification-content'>";
+                    $html   .= "<div class='notification-title'>" . strip_tags((string) $pusher->title) . "</div>";
+                    $html   .= "<div class='notification-subtitle'>" . strip_tags((string) $pusher->description) . "</div>";
+                    $html   .= "</div>";
+                    $html   .= "<span class='time'><i class='fa fa-clock-o'></i> " . $pusher->date . "</span>";
+                    $html   .= "<span class='hatchers-mark-read'>Mark as read</span>";
+                    $html   .= "<span class='hatchers-dismiss' data-type='" . $pusher->type . "' data-id='" . $pusher->itemID . "'>×</span>";
                     $html   .= "</a>";
                     $html   .= "</li>";
                 }
@@ -272,39 +361,49 @@
             $link        = '';
             $date        = '';
             $photo       = $this->data['siteinfos']->photo;
+            $icon        = 'fa-bell';
+            $iconClass   = 'notify-default';
 
             if ( customCompute($alert) ) {
                 if ( isset($alert['noticeID']) ) {
-                    $link        = "alert/index/notice/" . $alert['noticeID'];
+                    $link        = "alert/read/notice/" . $alert['noticeID'];
                     $date        = $this->_timer($alert['create_date']);
                     $title       = namesorting($alert['title'], 27);
                     $description = namesorting($alert['notice'], 32);
                     $photo       = ( customCompute(userInfo($alert['create_usertypeID'],
                         $alert['create_userID'])) ? userInfo($alert['create_usertypeID'],
                         $alert['create_userID'])->photo : 'default.png' );
+                    $icon        = 'fa-bullhorn';
+                    $iconClass   = 'notify-notice';
                 } elseif ( isset($alert['msg_id']) ) {
-                    $link        = "alert/index/message/" . $alert['conversation_id'];
+                    $link        = "alert/read/message/" . $alert['msg_id'];
                     $date        = $this->_timer($alert['create_date']);
                     $title       = namesorting($alert['subject'], 27);
                     $description = namesorting($alert['msg'], 32);
                     $photo       = ( customCompute(userInfo($alert['usertypeID'], $alert['user_id'])) ? userInfo($alert['usertypeID'],
                         $alert['user_id'])->photo : 'default.png' );
+                    $icon        = 'fa-comments';
+                    $iconClass   = 'notify-message';
                 } elseif ( isset($alert['eventID']) ) {
-                    $link        = "alert/index/event/" . $alert['eventID'];
+                    $link        = "alert/read/event/" . $alert['eventID'];
                     $date        = $this->_timer($alert['create_date']);
                     $title       = namesorting($alert['title'], 27);
                     $description = namesorting($alert['details'], 32);
                     $photo       = ( customCompute(userInfo($alert['create_usertypeID'],
                         $alert['create_userID'])) ? userInfo($alert['create_usertypeID'],
                         $alert['create_userID'])->photo : 'default.png' );
+                    $icon        = 'fa-calendar';
+                    $iconClass   = 'notify-event';
                 } elseif ( isset($alert['holidayID']) ) {
-                    $link        = "alert/index/holiday/" . $alert['holidayID'];
+                    $link        = "alert/read/holiday/" . $alert['holidayID'];
                     $date        = $this->_timer($alert['create_date']);
                     $title       = namesorting($alert['title'], 27);
                     $description = namesorting($alert['details'], 32);
                     $photo       = ( customCompute(userInfo($alert['create_usertypeID'],
                         $alert['create_userID'])) ? userInfo($alert['create_usertypeID'],
                         $alert['create_userID'])->photo : 'default.png' );
+                    $icon        = 'fa-plane';
+                    $iconClass   = 'notify-holiday';
                 }
             }
             return (object) [
@@ -312,8 +411,33 @@
                 'description' => $description,
                 'link'        => $link,
                 'photo'       => imagelink($photo),
-                'date'        => $date
+                'date'        => $date,
+                'icon'        => $icon,
+                'iconClass'   => $iconClass,
+                'type'        => $this->_alertIdentity($alert)['itemname'] ?? '',
+                'itemID'      => $this->_alertIdentity($alert)['itemID'] ?? 0
             ];
+        }
+
+        private function _alertIdentity($alert)
+        {
+            if (isset($alert['noticeID'])) {
+                return ['itemname' => 'notice', 'itemID' => $alert['noticeID']];
+            } elseif (isset($alert['msg_id'])) {
+                return ['itemname' => 'message', 'itemID' => $alert['msg_id']];
+            } elseif (isset($alert['eventID'])) {
+                return ['itemname' => 'event', 'itemID' => $alert['eventID']];
+            } elseif (isset($alert['holidayID'])) {
+                return ['itemname' => 'holiday', 'itemID' => $alert['holidayID']];
+            }
+            return [];
+        }
+
+        private function _json($payload)
+        {
+            $this->output
+                ->set_content_type('application/json')
+                ->set_output(json_encode($payload));
         }
 
         private function _timer( $createDate )

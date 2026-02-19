@@ -31,6 +31,18 @@
                                     <ul class="menu my-push-message-list">
                                     </ul>
                                 </li>
+                                <li class="footer hatchers-notify-footer">
+                                    <a class="hatchers-mark-all" href="<?=base_url('alert/clear')?>">Mark all as read</a>
+                                </li>
+                                <li class="footer hatchers-notify-footer">
+                                    <a class="hatchers-toggle-sound" href="#">Sound alerts</a>
+                                </li>
+                                <li class="footer hatchers-notify-footer">
+                                    <a class="hatchers-toggle-desktop" href="#">Desktop alerts</a>
+                                </li>
+                                <li class="footer">
+                                    <a class="hatchers-clear-all" href="<?=base_url('alert/clear')?>">Clear all</a>
+                                </li>
                             </ul>
                         </li>
 

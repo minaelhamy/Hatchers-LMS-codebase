@@ -115,6 +115,7 @@
             });
 
             $(document).ready(function () {
+              var lastAlertCount = 0;
               setTimeout(function () {
                 $.ajax({
                   type : 'GET',
@@ -129,14 +130,69 @@
                     });
                     if (alertNumber > 0) {
                       $('.my-push-message-ul').removeAttr('style');
-                      $('.my-push-message-a').append('<span class="label label-danger"><lable class="alert-image">' + alertNumber + '</lable> </span>');
+                      $('.my-push-message-a').append('<span class="hatchers-bell-badge">' + alertNumber + '</span>');
                       $('.my-push-message-number').html('<?=$this->lang->line("la_fs") . " "?>' + alertNumber + '<?=" " . $this->lang->line("la_ls")?>');
                     } else {
                       $('.my-push-message-ul').remove();
                     }
+
+                    if (alertNumber > lastAlertCount) {
+                      var newCount = alertNumber - lastAlertCount;
+                      if (soundEnabled) {
+                        var audio = new Audio('<?=base_url('assets/webcamjs/demos/shutter.mp3')?>');
+                        audio.play();
+                      }
+                      if (desktopEnabled && "Notification" in window && Notification.permission === "granted") {
+                        new Notification('Hatchers', {
+                          body: newCount + ' new notification(s)',
+                          icon: '<?=base_url('uploads/images/'.$siteinfos->photo)?>'
+                        });
+                      }
+                    }
+                    lastAlertCount = alertNumber;
                   }
                 });
               }, 5000);
+
+              $(document).on('click', '.hatchers-dismiss', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var $item = $(this).closest('li');
+                var type = $(this).data('type');
+                var id = $(this).data('id');
+                $.ajax({
+                  type: 'GET',
+                  url: "<?=base_url('alert/dismiss')?>/" + type + "/" + id,
+                  success: function () {
+                    $item.remove();
+                  }
+                });
+              });
+
+              var soundEnabled = localStorage.getItem('hatchers_sound') !== 'off';
+              var desktopEnabled = localStorage.getItem('hatchers_desktop') === 'on';
+              $(document).on('click', '.hatchers-toggle-sound', function (e) {
+                e.preventDefault();
+                soundEnabled = !soundEnabled;
+                localStorage.setItem('hatchers_sound', soundEnabled ? 'on' : 'off');
+                $(this).toggleClass('active', soundEnabled);
+              });
+              $(document).on('click', '.hatchers-toggle-desktop', function (e) {
+                e.preventDefault();
+                desktopEnabled = !desktopEnabled;
+                localStorage.setItem('hatchers_desktop', desktopEnabled ? 'on' : 'off');
+                $(this).toggleClass('active', desktopEnabled);
+                if (desktopEnabled && "Notification" in window && Notification.permission !== "granted") {
+                  Notification.requestPermission();
+                }
+              });
+
+              $(document).on('click', '.hatchers-clear-all', function (e) {
+                e.preventDefault();
+                if (confirm('Clear all notifications?')) {
+                  window.location.href = $(this).attr('href');
+                }
+              });
             });
         </script>
     </body>
