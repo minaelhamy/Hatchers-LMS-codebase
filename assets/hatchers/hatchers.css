@@ -9,6 +9,130 @@
     --hatchers-purple: #8a3ffc;
 }
 
+.hatchers-global,
+.hatchers-global body,
+.hatchers-global .content-wrapper,
+.hatchers-global .right-side {
+    background: var(--hatchers-bg);
+    color: var(--hatchers-text);
+    font-family: "Circular Std", "SF Pro Display", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.hatchers-global .content {
+    padding: 28px;
+}
+
+.hatchers-global .box {
+    background: var(--hatchers-surface);
+    border: 1px solid var(--hatchers-border);
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(45, 35, 24, 0.04);
+}
+
+.hatchers-global .box-header,
+.hatchers-global .box-body,
+.hatchers-global .box-footer {
+    border-color: var(--hatchers-border);
+}
+
+.hatchers-global .box-header {
+    border-bottom: 1px solid var(--hatchers-border);
+    padding: 16px 18px;
+    background: transparent;
+}
+
+.hatchers-global .box-title {
+    font-weight: 600;
+    color: var(--hatchers-text);
+}
+
+.hatchers-global .table {
+    color: var(--hatchers-text);
+}
+
+.hatchers-global .table > thead > tr > th {
+    border-bottom: 1px solid var(--hatchers-border);
+    color: var(--hatchers-muted);
+    font-weight: 600;
+}
+
+.hatchers-global .table > tbody > tr > td {
+    border-top: 1px solid var(--hatchers-border);
+}
+
+.hatchers-global .form-control,
+.hatchers-global select,
+.hatchers-global textarea,
+.hatchers-global input[type="text"],
+.hatchers-global input[type="email"],
+.hatchers-global input[type="password"],
+.hatchers-global input[type="number"],
+.hatchers-global input[type="date"],
+.hatchers-global input[type="datetime-local"] {
+    border: 1px solid var(--hatchers-border);
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+.hatchers-global .btn,
+.hatchers-global .btn-primary,
+.hatchers-global .btn-success,
+.hatchers-global .btn-danger,
+.hatchers-global .btn-info,
+.hatchers-global .btn-warning {
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.hatchers-global .btn-primary,
+.hatchers-global .btn-success {
+    background: var(--hatchers-accent);
+    border-color: var(--hatchers-accent);
+}
+
+.hatchers-global .btn-primary:hover,
+.hatchers-global .btn-success:hover {
+    background: #9b0d4d;
+    border-color: #9b0d4d;
+}
+
+.hatchers-global .main-header,
+.hatchers-global .navbar,
+.hatchers-global .navbar-static-top {
+    background: #fdfbf8;
+    border-bottom: 1px solid var(--hatchers-border);
+}
+
+.hatchers-global .left-side,
+.hatchers-global .main-sidebar {
+    background: #fdfbf8;
+    border-right: 1px solid var(--hatchers-border);
+}
+
+.hatchers-global .sidebar-menu > li > a {
+    color: #3c3c3c;
+    font-weight: 600;
+}
+
+.hatchers-global .sidebar-menu > li.active > a,
+.hatchers-global .sidebar-menu > li > a:hover {
+    background: #f2eee7;
+    border-radius: 10px;
+}
+
+.hatchers-global .small-box,
+.hatchers-global .callout {
+    border-radius: 16px;
+    border: 1px solid var(--hatchers-border);
+    box-shadow: 0 8px 20px rgba(45, 35, 24, 0.04);
+}
+
+.hatchers-global .pagination > li > a,
+.hatchers-global .pagination > li > span {
+    border-radius: 8px;
+    border: 1px solid var(--hatchers-border);
+}
+
 .hatchers-dashboard {
     background: var(--hatchers-bg);
     padding: 28px 28px 36px;
