@@ -18,6 +18,7 @@ jobs:
           host: ${{ secrets.CPANEL_HOST }}
           username: ${{ secrets.CPANEL_USER }}
           key: ${{ secrets.CPANEL_SSH_KEY }}
+          port: 21098
           script: |
             cd /home/hatchwan/lms.hatchers.ai
             git pull origin main
