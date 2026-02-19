@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Hatchers LMS User Manual</title>
+    <style>
+        :root {
+            --ink: #2b2b2b;
+            --muted: #6f6f6f;
+            --accent: #b70f5a;
+            --bg: #ffffff;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            color: var(--ink);
+            background: var(--bg);
+            margin: 0;
+            padding: 48px 64px 60px 64px;
+            line-height: 1.5;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .logo {
+            width: 140px;
+            height: auto;
+        }
+        h1 {
+            font-size: 28px;
+            margin: 0;
+        }
+        h2 {
+            margin-top: 28px;
+            font-size: 20px;
+            color: var(--accent);
+        }
+        h3 {
+            margin-top: 18px;
+            font-size: 16px;
+        }
+        p {
+            margin: 6px 0 10px;
+            color: var(--ink);
+        }
+        ul {
+            margin: 6px 0 12px 18px;
+            padding: 0;
+        }
+        li { margin: 4px 0; }
+        .section {
+            margin-bottom: 18px;
+        }
+        .note {
+            font-size: 12px;
+            color: var(--muted);
+        }
+        .footer {
+            margin-top: 28px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <img class="logo" src="/Users/minaelhamy/Downloads/Hatchers/Designs Pictures/Logo.png" alt="Hatchers Logo">
+        <div>
+            <h1>Hatchers LMS User Manual</h1>
+            <p class="note">Founder, Mentor, and Super Admin Guide</p>
+        </div>
+    </div>
+
+    <p>This guide explains how to use the Hatchers platform for Founders, Mentors, and Super Admins.</p>
+
+    <h2>Founder Guide</h2>
+    <div class="section">
+        <h3>1. Your Home Dashboard</h3>
+        <p>After login, you land on the Home dashboard. It includes:</p>
+        <ul>
+            <li>Left navigation: Quick access to your journey sections (Home, Launch Plan, AI Tools, Learning Plan, Mentoring).</li>
+            <li>Center timeline: What’s included in your day (mentoring sessions, learning items, tasks).</li>
+            <li>Right panel: Calendar + AI Tools list.</li>
+            <li>Bottom AI chat: Ask the Hatchers AI assistant for help.</li>
+        </ul>
+    </div>
+    <div class="section">
+        <h3>2. Understanding Your Day</h3>
+        <p>The center feed is split into:</p>
+        <ul>
+            <li>Mentoring: Next session with your mentor.</li>
+            <li>Learning: Your next learning lesson.</li>
+            <li>Tasks: Action items you must complete.</li>
+        </ul>
+    </div>
+    <div class="section">
+        <h3>3. Using the Calendar</h3>
+        <p>The right panel calendar highlights:</p>
+        <ul>
+            <li>Mentoring sessions</li>
+            <li>Learning sessions</li>
+            <li>Task due dates</li>
+        </ul>
+        <p>Clicking a date shows what’s scheduled that day.</p>
+    </div>
+    <div class="section">
+        <h3>4. Using Hatchers AI Assistant</h3>
+        <p>At the bottom of the home page:</p>
+        <ul>
+            <li>Type your question in the chat box.</li>
+            <li>Click the arrow or press Enter.</li>
+            <li>Hatchers AI will respond based on your milestones, tasks, and progress.</li>
+        </ul>
+    </div>
+
+    <h2>Mentor Guide</h2>
+    <div class="section">
+        <h3>1. Mentor Dashboard</h3>
+        <p>After login, you see your Founders list. Click any founder to open the full detail page.</p>
+    </div>
+    <div class="section">
+        <h3>2. Founder Detail Page</h3>
+        <p>On the detail page, you manage:</p>
+        <ul>
+            <li>Milestones</li>
+            <li>Mentoring Meetings</li>
+            <li>Learning Items</li>
+            <li>Tasks</li>
+        </ul>
+    </div>
+    <div class="section">
+        <h3>3. Add a Milestone</h3>
+        <ul>
+            <li>Open founder detail page.</li>
+            <li>Scroll to Milestones.</li>
+            <li>Fill in Title, Description, and Due date (optional).</li>
+            <li>Click Add Milestone.</li>
+        </ul>
+    </div>
+    <div class="section">
+        <h3>4. Schedule a Mentoring Meeting</h3>
+        <ul>
+            <li>In Mentoring Meetings, fill Start time, End time (optional), and Notes (optional).</li>
+            <li>Click Add Meeting.</li>
+        </ul>
+        <p>Meetings appear on the founder’s calendar automatically.</p>
+    </div>
+    <div class="section">
+        <h3>5. Add Learning</h3>
+        <ul>
+            <li>In Learning, fill Lesson title, Subtitle, and Start time (optional).</li>
+            <li>Click Add Lesson.</li>
+        </ul>
+    </div>
+    <div class="section">
+        <h3>6. Add Tasks</h3>
+        <ul>
+            <li>In Tasks, fill Task title, Description, Optional milestone, and Due date.</li>
+            <li>Click Add Task.</li>
+        </ul>
+        <p>Tasks show on the founder’s dashboard and calendar.</p>
+    </div>
+
+    <h2>Super Admin Guide</h2>
+    <div class="section">
+        <h3>1. Main Control Pages</h3>
+        <ul>
+            <li>Assignments: /hatchersadmin/assignments</li>
+            <li>Profiles: /hatchersadmin/profiles</li>
+            <li>Navigation: /hatchersadmin/nav</li>
+            <li>AI Settings: /hatchersadmin/ai</li>
+        </ul>
+    </div>
+    <div class="section">
+        <h3>2. Create Founders and Mentors</h3>
+        <p>Go to Profiles page and use the Create Founder / Create Mentor forms.</p>
+        <p class="note">Founders automatically get a guardian record (required by the system).</p>
+    </div>
+    <div class="section">
+        <h3>3. Assign Mentors to Founders</h3>
+        <p>Go to Assignments, choose a mentor for each founder, and click Save. Mapping is 1:1.</p>
+    </div>
+    <div class="section">
+        <h3>4. Bulk Import (CSV)</h3>
+        <ul>
+            <li>Download a template</li>
+            <li>Upload your CSV</li>
+            <li>Preview validation</li>
+            <li>Confirm import</li>
+        </ul>
+        <p>Founders CSV: name, email, phone, username, password, classesID, sectionID, roll</p>
+        <p>Mentors CSV: name, email, phone, username, password, sex, dob, designation</p>
+    </div>
+    <div class="section">
+        <h3>5. Edit or Delete Profiles</h3>
+        <p>From Profiles, click Edit to update accounts or Delete to remove them.</p>
+        <p class="note">Safety rules prevent deleting founders with assignments or data.</p>
+    </div>
+    <div class="section">
+        <h3>6. Manage Navigation Items</h3>
+        <p>Go to Navigation to add, update, hide, or delete left menu and AI tool items.</p>
+    </div>
+    <div class="section">
+        <h3>7. Configure Hatchers AI Assistant</h3>
+        <p>Go to AI Settings to set the OpenAI API key, system prompt, guidelines, model, temperature, and max tokens.</p>
+    </div>
+
+    <h2>Quick Troubleshooting</h2>
+    <div class="section">
+        <ul>
+            <li>Founder can’t chat with AI: Ensure OpenAI key is set in /hatchersadmin/ai.</li>
+            <li>Mentor can’t access founder: Confirm assignment in /hatchersadmin/assignments.</li>
+            <li>Import preview shows errors: Fix CSV missing fields or duplicate usernames/emails.</li>
+        </ul>
+    </div>
+
+    <div class="footer">
+        Hatchers LMS • User Manual
+    </div>
+</body>
+</html>
