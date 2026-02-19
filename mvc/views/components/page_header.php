@@ -28,6 +28,7 @@
         <link href="<?php echo base_url('assets/datatables/dataTables.bootstrap.css'); ?>" rel="stylesheet">
 
         <link id="headStyleCSSLink" href="<?php echo base_url($backendThemePath.'/style.css'); ?>" rel="stylesheet">
+        <link href="<?php echo base_url('assets/hatchers/hatchers.css'); ?>" rel="stylesheet">
 
         <link href="<?php echo base_url('assets/inilabs/hidetable.css'); ?>" rel="stylesheet">
 
@@ -72,7 +73,7 @@
           });
         </script>
     </head>
-    <body class="skin-blue fuelux">
+    <body class="skin-blue fuelux hatchers-global">
         <div class="se-pre-con"></div>
         <div id="loading">
             <img src="<?=base_url('assets/ajaxloder/loader.gif')?>" width="150" height="150"/>

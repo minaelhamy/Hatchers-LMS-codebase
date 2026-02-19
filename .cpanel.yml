@@ -2,4 +2,4 @@
 deployment:
   tasks:
     - export DEPLOYPATH=/home/hatchwan/lms.hatchers.ai/
-    - /bin/rsync -a --delete --exclude '.git' --exclude '.cpanel.yml' ./ $DEPLOYPATH
+    - /bin/rsync -a --delete --exclude '.git' --exclude '.cpanel.yml' --exclude 'uploads/' --exclude 'mvc/config/database.php' --exclude 'mvc/config/config.php' ./ $DEPLOYPATH
