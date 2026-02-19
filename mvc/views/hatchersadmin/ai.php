@@ -27,7 +27,7 @@
 
     <div class="hatchers-detail-section">
         <form class="hatchers-form" method="post" action="<?=base_url('hatchersadmin/ai_save')?>">
-            <div class="hatchers-form-title">OpenAI API Key</div>
+            <div class="hatchers-form-title">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</div>
             <input type="password" name="openai_api_key" value="<?=htmlspecialchars((string) $openaiKey)?>" placeholder="sk-...">
 
             <div class="hatchers-form-title">System Prompt</div>
