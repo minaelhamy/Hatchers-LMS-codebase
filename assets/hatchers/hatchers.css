@@ -48,16 +48,63 @@
 
 .hatchers-global .table {
     color: var(--hatchers-text);
+    background: var(--hatchers-surface);
+    border-radius: 14px;
+    overflow: hidden;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .hatchers-global .table > thead > tr > th {
     border-bottom: 1px solid var(--hatchers-border);
     color: var(--hatchers-muted);
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    font-size: 11px;
+    background: #faf7f1;
 }
 
 .hatchers-global .table > tbody > tr > td {
     border-top: 1px solid var(--hatchers-border);
+    padding: 12px 14px;
+}
+
+.hatchers-global .table > tbody > tr:hover > td {
+    background: #f8f4ee;
+}
+
+.hatchers-global .table > tbody > tr > td:first-child,
+.hatchers-global .table > thead > tr > th:first-child {
+    padding-left: 18px;
+}
+
+.hatchers-global .table > tbody > tr > td:last-child,
+.hatchers-global .table > thead > tr > th:last-child {
+    padding-right: 18px;
+}
+
+.hatchers-global .dataTables_wrapper .dataTables_filter input,
+.hatchers-global .dataTables_wrapper .dataTables_length select {
+    margin-left: 6px;
+}
+
+.hatchers-global .dataTables_wrapper .dataTables_paginate .paginate_button {
+    border-radius: 8px;
+    border: 1px solid var(--hatchers-border) !important;
+    padding: 4px 8px;
+    margin: 0 2px;
+    color: var(--hatchers-text) !important;
+    background: #fff !important;
+}
+
+.hatchers-global .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #f2eee7 !important;
+    border-color: #e3dfd7 !important;
+}
+
+.hatchers-global .dataTables_wrapper .dataTables_info {
+    color: var(--hatchers-muted);
 }
 
 .hatchers-global .form-control,
@@ -72,6 +119,27 @@
     border: 1px solid var(--hatchers-border);
     border-radius: 10px;
     box-shadow: none;
+    background: #fff;
+    padding: 10px 12px;
+}
+
+.hatchers-global .form-group {
+    margin-bottom: 16px;
+}
+
+.hatchers-global label {
+    font-weight: 600;
+    color: var(--hatchers-muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.hatchers-global .box .box-body form {
+    background: #fff;
+    border: 1px solid var(--hatchers-border);
+    border-radius: 16px;
+    padding: 18px;
 }
 
 .hatchers-global .btn,
@@ -96,11 +164,39 @@
     border-color: #9b0d4d;
 }
 
+.hatchers-global .btn-default,
+.hatchers-global .btn-info,
+.hatchers-global .btn-warning,
+.hatchers-global .btn-danger {
+    background: #f4f1ec;
+    border-color: var(--hatchers-border);
+    color: #3c3c3c;
+}
+
+.hatchers-global .btn-danger:hover {
+    background: #f2dede;
+    border-color: #e6c7c7;
+}
+
 .hatchers-global .main-header,
 .hatchers-global .navbar,
 .hatchers-global .navbar-static-top {
     background: #fdfbf8;
     border-bottom: 1px solid var(--hatchers-border);
+}
+
+.hatchers-global .navbar .navbar-nav > li > a {
+    color: #3c3c3c;
+    font-weight: 600;
+}
+
+.hatchers-global .navbar .navbar-nav > li > a:hover {
+    background: #f2eee7;
+}
+
+.hatchers-global .navbar .logo {
+    font-weight: 800;
+    letter-spacing: 0.6px;
 }
 
 .hatchers-global .left-side,
@@ -112,12 +208,108 @@
 .hatchers-global .sidebar-menu > li > a {
     color: #3c3c3c;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .hatchers-global .sidebar-menu > li.active > a,
 .hatchers-global .sidebar-menu > li > a:hover {
     background: #f2eee7;
     border-radius: 10px;
+}
+
+.hatchers-global .sidebar-menu > li > a > .fa,
+.hatchers-global .sidebar-menu > li > a > .glyphicon,
+.hatchers-global .sidebar-menu > li > a > .ion {
+    width: 20px;
+    text-align: center;
+    font-size: 14px;
+    color: #b36b7e;
+}
+
+.hatchers-global .sidebar-menu > li.active > a > .fa,
+.hatchers-global .sidebar-menu > li.active > a > .glyphicon,
+.hatchers-global .sidebar-menu > li.active > a > .ion {
+    color: var(--hatchers-accent);
+}
+
+.hatchers-global .user-panel img {
+    border-radius: 12px;
+    border: 1px solid var(--hatchers-border);
+}
+
+.hatchers-global .content-header {
+    margin-bottom: 18px;
+}
+
+.hatchers-global .content-header > h1 {
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--hatchers-text);
+}
+
+.hatchers-global .breadcrumb {
+    background: transparent;
+    font-size: 12px;
+    color: var(--hatchers-muted);
+}
+
+.hatchers-global .callout,
+.hatchers-global .alert {
+    border-radius: 14px;
+    border: 1px solid var(--hatchers-border);
+    background: #fff;
+}
+
+.hatchers-global .nav-tabs-custom {
+    border-radius: 16px;
+    border: 1px solid var(--hatchers-border);
+    box-shadow: 0 8px 20px rgba(45, 35, 24, 0.04);
+}
+
+.hatchers-global .nav-tabs-custom > .nav-tabs > li > a {
+    color: var(--hatchers-muted);
+    font-weight: 600;
+}
+
+.hatchers-global .nav-tabs-custom > .nav-tabs > li.active > a {
+    color: var(--hatchers-text);
+    border-top-color: var(--hatchers-accent);
+}
+
+.hatchers-global .dataTables_wrapper .dataTables_filter input,
+.hatchers-global .dataTables_wrapper .dataTables_length select {
+    border-radius: 10px;
+    border: 1px solid var(--hatchers-border);
+    padding: 6px 8px;
+}
+
+.hatchers-global .label,
+.hatchers-global .badge {
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.hatchers-global .box-header .box-tools .btn {
+    background: #f4f1ec;
+    border: 1px solid var(--hatchers-border);
+    color: #3c3c3c;
+}
+
+.hatchers-global .input-group-addon {
+    border-radius: 10px 0 0 10px;
+    border: 1px solid var(--hatchers-border);
+    background: #f4f1ec;
+}
+
+.hatchers-global .modal-content {
+    border-radius: 16px;
+    border: 1px solid var(--hatchers-border);
+}
+
+.hatchers-global .list-group-item {
+    border-color: var(--hatchers-border);
 }
 
 .hatchers-global .small-box,
