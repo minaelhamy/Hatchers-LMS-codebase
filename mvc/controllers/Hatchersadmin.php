@@ -183,11 +183,7 @@ class Hatchersadmin extends Admin_Controller
         if ($this->db->table_exists('hatcher_ai_settings')) {
             $aiSettings = $this->hatcher_ai_settings_m->get_latest_settings();
         }
-        $openaiKeyRow = $this->setting_m->get_setting_where('openai_api_key');
-        $openaiKey = customCompute($openaiKeyRow) ? $openaiKeyRow->value : '';
-
         $this->data['aiSettings'] = $aiSettings;
-        $this->data['openaiKey'] = $openaiKey;
         $this->data["subview"] = "hatchersadmin/ai";
         $this->load->view('_layout_main', $this->data);
     }
@@ -202,7 +198,6 @@ class Hatchersadmin extends Admin_Controller
         $model = $this->input->post('model');
         $temperature = (float) $this->input->post('temperature');
         $maxTokens = (int) $this->input->post('max_tokens');
-        $openaiKey = $this->input->post('openai_api_key');
 
         $this->hatcher_ai_settings_m->upsert_settings([
             'system_prompt' => $systemPrompt,
@@ -211,12 +206,6 @@ class Hatchersadmin extends Admin_Controller
             'temperature' => $temperature,
             'max_tokens' => $maxTokens
         ]);
-
-        if (!empty($openaiKey)) {
-            $this->setting_m->insertorupdate([
-                'openai_api_key' => $openaiKey
-            ]);
-        }
 
         redirect('hatchersadmin/ai');
     }

@@ -57,10 +57,6 @@ class Aiassistant extends Admin_Controller
             $settings = $this->hatcher_ai_settings_m->get_latest_settings();
         }
         $openaiKey = getenv('OPENAI_API_KEY');
-        if (empty($openaiKey)) {
-            $openaiKeyRow = $this->setting_m->get_setting_where('openai_api_key');
-            $openaiKey = customCompute($openaiKeyRow) ? $openaiKeyRow->value : '';
-        }
 
         if (empty($openaiKey)) {
             $this->_json(['ok' => false, 'error' => 'OpenAI API key not configured.']);

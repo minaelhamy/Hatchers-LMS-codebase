@@ -28,7 +28,10 @@
     <div class="hatchers-detail-section">
         <form class="hatchers-form" method="post" action="<?=base_url('hatchersadmin/ai_save')?>">
             <div class="hatchers-form-title">OpenAI API Key</div>
-            <input type="password" name="openai_api_key" value="<?=htmlspecialchars((string) $openaiKey)?>" placeholder="sk-...">
+            <div class="hatchers-list-subtitle">
+                The API key is loaded from the server environment variable <code>OPENAI_API_KEY</code>.
+                For security, it is not stored in the database.
+            </div>
 
             <div class="hatchers-form-title">System Prompt</div>
             <textarea name="system_prompt" required><?=htmlspecialchars((string) $aiSettings->system_prompt)?></textarea>
