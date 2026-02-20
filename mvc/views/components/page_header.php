@@ -73,7 +73,16 @@
           });
         </script>
     </head>
-    <body class="skin-blue fuelux hatchers-global">
+    <?php
+        $usertypeID = $this->session->userdata('usertypeID');
+        $hatchersRoleClass = '';
+        if ($usertypeID == 3) {
+            $hatchersRoleClass = 'hatchers-founder';
+        } elseif ($usertypeID == 2) {
+            $hatchersRoleClass = 'hatchers-mentor';
+        }
+    ?>
+    <body class="skin-blue fuelux hatchers-global <?=$hatchersRoleClass?>">
         <div class="se-pre-con"></div>
         <div id="loading">
             <img src="<?=base_url('assets/ajaxloder/loader.gif')?>" width="150" height="150"/>

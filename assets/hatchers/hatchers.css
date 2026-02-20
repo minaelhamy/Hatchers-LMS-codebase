@@ -950,6 +950,48 @@
     display: none;
 }
 
+.hatchers-mentor .user-panel,
+.hatchers-founder .user-panel {
+    display: none;
+}
+
+.hatchers-sidebar-profile {
+    position: sticky;
+    bottom: 12px;
+    margin: 16px 12px 12px;
+    background: #ffffff;
+    border: 1px solid var(--hatchers-border);
+    border-radius: 16px;
+    padding: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.hatchers-sidebar-avatar img {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid var(--hatchers-border);
+}
+
+.hatchers-sidebar-info {
+    display: grid;
+    gap: 4px;
+}
+
+.hatchers-sidebar-name {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.hatchers-sidebar-link {
+    font-size: 12px;
+    color: var(--hatchers-accent);
+    text-decoration: none;
+}
+
 .hatchers-mentor .left-side {
     background: #fdfbf8;
     border-right: 1px solid var(--hatchers-border);
