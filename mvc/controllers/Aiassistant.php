@@ -129,6 +129,27 @@ class Aiassistant extends Admin_Controller
         $this->_json(['ok' => true, 'reply' => $reply]);
     }
 
+    public function env_test()
+    {
+        if ($this->session->userdata('usertypeID') != 1) {
+            show_404();
+        }
+
+        $key = getenv('OPENAI_API_KEY');
+        if (empty($key) && isset($_SERVER['OPENAI_API_KEY'])) {
+            $key = $_SERVER['OPENAI_API_KEY'];
+        }
+        if (empty($key) && isset($_ENV['OPENAI_API_KEY'])) {
+            $key = $_ENV['OPENAI_API_KEY'];
+        }
+
+        $length = is_string($key) ? strlen($key) : 0;
+        $this->_json([
+            'ok' => $length > 0,
+            'length' => $length
+        ]);
+    }
+
     private function _buildFounderContext($founderID, $openaiKey)
     {
         if (!$this->db->table_exists('hatcher_ai_context')) {
