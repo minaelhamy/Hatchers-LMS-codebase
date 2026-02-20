@@ -45,18 +45,6 @@
                         }
                     ?>
                 </ul>
-                <?php if (in_array($this->session->userdata('usertypeID'), [2,3])) { ?>
-                    <div class="hatchers-sidebar-profile">
-                        <div class="hatchers-sidebar-avatar">
-                            <img src="<?=imagelink($this->session->userdata('photo'))?>" alt="">
-                        </div>
-                        <div class="hatchers-sidebar-info">
-                            <div class="hatchers-sidebar-name"><?=htmlspecialchars($this->session->userdata('name'))?></div>
-                            <a class="hatchers-sidebar-link" href="<?=base_url('profile/index')?>">Profile</a>
-                            <a class="hatchers-sidebar-link" href="<?=base_url('signin/signout')?>">Logout</a>
-                        </div>
-                    </div>
-                <?php } ?>
             </section>
             <!-- /.sidebar -->
         </aside>
