@@ -63,6 +63,15 @@ class Aiassistant extends Admin_Controller
         if (empty($openaiKey) && isset($_ENV['OPENAI_API_KEY'])) {
             $openaiKey = $_ENV['OPENAI_API_KEY'];
         }
+        if (empty($openaiKey)) {
+            $secretPath = APPPATH . 'config/openai_secret.php';
+            if (file_exists($secretPath)) {
+                $secret = include $secretPath;
+                if (is_array($secret) && !empty($secret['openai_api_key'])) {
+                    $openaiKey = $secret['openai_api_key'];
+                }
+            }
+        }
 
         if (empty($openaiKey)) {
             $this->_json(['ok' => false, 'error' => 'OpenAI API key not configured.']);
@@ -141,6 +150,15 @@ class Aiassistant extends Admin_Controller
         }
         if (empty($key) && isset($_ENV['OPENAI_API_KEY'])) {
             $key = $_ENV['OPENAI_API_KEY'];
+        }
+        if (empty($key)) {
+            $secretPath = APPPATH . 'config/openai_secret.php';
+            if (file_exists($secretPath)) {
+                $secret = include $secretPath;
+                if (is_array($secret) && !empty($secret['openai_api_key'])) {
+                    $key = $secret['openai_api_key'];
+                }
+            }
         }
 
         $length = is_string($key) ? strlen($key) : 0;
