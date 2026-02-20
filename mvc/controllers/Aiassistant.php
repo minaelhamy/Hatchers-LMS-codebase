@@ -98,7 +98,7 @@ class Aiassistant extends Admin_Controller
 
         $response = $this->_callOpenAI($openaiKey, $payload);
         if (!$response['ok']) {
-            $this->_json(['ok' => false, 'error' => $response['error']]);
+            $this->_json(['ok' => false, 'error' => $this->_friendlyOpenAIError($response['error'])]);
             return;
         }
 
@@ -340,6 +340,22 @@ class Aiassistant extends Admin_Controller
             }
         }
         return '';
+    }
+
+    private function _friendlyOpenAIError($message)
+    {
+        $safeDefault = 'Hatchers AI is temporarily unavailable. Please try again in a minute.';
+        $message = (string) $message;
+        if (stripos($message, 'Incorrect API key') !== false || stripos($message, 'authentication') !== false) {
+            return 'AI service is not configured correctly. Please contact the admin to verify the API key.';
+        }
+        if (stripos($message, 'rate limit') !== false) {
+            return 'Hatchers AI is busy right now. Please try again shortly.';
+        }
+        if (stripos($message, 'insufficient_quota') !== false) {
+            return 'Hatchers AI is temporarily unavailable due to billing limits.';
+        }
+        return $safeDefault;
     }
 
     private function _json($payload)
