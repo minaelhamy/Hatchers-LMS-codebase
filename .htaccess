@@ -1,5 +1,10 @@
-RewriteEngine on
-RewriteCond $1 !^(index\.php|assets|uploads|documentation|robots\.txt)
-RewriteRule ^(.*)$ index.php/$1 [L]
+DirectoryIndex index.php index.html
+Options -Indexes
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php/$1 [L,QSA]
+
 RewriteCond %{HTTP:Authorization} ^(.+)$
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%1]
