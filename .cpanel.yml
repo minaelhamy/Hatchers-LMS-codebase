@@ -1,5 +1,9 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/hatchwan/lms.hatchers.ai/
-    - /bin/rsync -a --delete --exclude '.git' --exclude '.cpanel.yml' --exclude 'uploads/' --exclude 'mvc/config/database.php' --exclude 'mvc/config/config.php' --exclude 'mvc/config/openai_secret.php' ./ $DEPLOYPATH
+    - export LMS_DEPLOYPATH=/home/hatchwan/lms.hatchers.ai
+    - export HUSTLER_DEPLOYPATH=/home/hatchwan/hustler.hatchers.ai
+    - /bin/mkdir -p "$LMS_DEPLOYPATH"
+    - /bin/mkdir -p "$HUSTLER_DEPLOYPATH"
+    - /bin/rsync -a --delete --exclude '.git' --exclude '.cpanel.yml' --exclude 'uploads/' --exclude 'mvc/config/database.php' --exclude 'mvc/config/config.php' --exclude 'mvc/config/openai_secret.php' ./ "$LMS_DEPLOYPATH"/
+    - /bin/rsync -a --delete --exclude '.git' --exclude '.cpanel.yml' --exclude 'uploads/' --exclude 'mvc/config/database.php' --exclude 'mvc/config/config.php' --exclude 'mvc/config/openai_secret.php' ./ "$HUSTLER_DEPLOYPATH"/
