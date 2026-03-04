@@ -1,0 +1,420 @@
+.hustler-shell {
+    margin: 0;
+    background:
+        radial-gradient(circle at top right, rgba(183, 15, 90, 0.12), transparent 28%),
+        radial-gradient(circle at bottom left, rgba(62, 123, 246, 0.08), transparent 32%),
+        #f8f4ee;
+    color: #1f1f1f;
+    font-family: "Circular Std", "SF Pro Display", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.hustler-login-shell,
+.hustler-app {
+    min-height: 100vh;
+}
+
+.hustler-login-shell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+}
+
+.hustler-login-card {
+    width: 100%;
+    max-width: 460px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ece3d8;
+    border-radius: 28px;
+    padding: 32px;
+    box-shadow: 0 24px 60px rgba(45, 35, 24, 0.08);
+}
+
+.hustler-login-brand,
+.hustler-eyebrow,
+.hustler-sidebar-label,
+.hustler-plan-type {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 11px;
+    font-weight: 700;
+    color: #8a6d54;
+}
+
+.hustler-login-card h1,
+.hustler-hero h1 {
+    margin: 12px 0 10px;
+    font-size: 34px;
+    line-height: 1.05;
+    font-weight: 800;
+    color: #18120d;
+}
+
+.hustler-login-card p,
+.hustler-hero p,
+.hustler-panel-copy,
+.hustler-plan-copy,
+.hustler-summary-meta,
+.hustler-escalation span {
+    color: #6c625a;
+    line-height: 1.55;
+}
+
+.hustler-login-form {
+    display: grid;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.hustler-login-form label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #7f7061;
+    text-transform: uppercase;
+}
+
+.hustler-login-form input,
+.hustler-chat-form textarea,
+.hustler-chat-form.compact textarea {
+    width: 100%;
+    border: 1px solid #e6ddd2;
+    border-radius: 16px;
+    background: #fff;
+    padding: 14px 16px;
+    outline: none;
+}
+
+.hustler-login-error {
+    margin-top: 20px;
+    background: #fff2f2;
+    border: 1px solid #f2c7c7;
+    color: #8f2b2b;
+    border-radius: 14px;
+    padding: 12px 14px;
+}
+
+.hustlers-primary-btn {
+    border: 0;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #b70f5a, #d21875);
+    color: #fff;
+    padding: 14px 18px;
+    font-weight: 700;
+    box-shadow: 0 16px 24px rgba(183, 15, 90, 0.22);
+}
+
+.hustlers-primary-btn:disabled {
+    opacity: 0.7;
+}
+
+.hustler-app {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr) 340px;
+    gap: 24px;
+    padding: 24px;
+}
+
+.hustler-sidebar,
+.hustler-right,
+.hustler-main {
+    min-width: 0;
+}
+
+.hustler-sidebar {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid #ece3d8;
+    border-radius: 28px;
+    padding: 24px;
+    box-shadow: 0 20px 48px rgba(45, 35, 24, 0.05);
+}
+
+.hustler-sidebar-top {
+    padding-bottom: 18px;
+    border-bottom: 1px solid #efe7de;
+}
+
+.hustler-sidebar-brand {
+    font-size: 24px;
+    font-weight: 800;
+    color: #20140d;
+}
+
+.hustler-sidebar-subtitle {
+    color: #7e7265;
+    font-size: 13px;
+}
+
+.hustler-sidebar-nav {
+    display: grid;
+    gap: 8px;
+    margin: 20px 0 24px;
+}
+
+.hustler-sidebar-nav a {
+    color: #2d241f;
+    text-decoration: none;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid transparent;
+    font-weight: 700;
+}
+
+.hustler-sidebar-nav a.active,
+.hustler-sidebar-nav a:hover {
+    background: #fff;
+    border-color: #e7ddd2;
+}
+
+.hustler-sidebar-section {
+    margin-top: 20px;
+}
+
+.hustler-plan-card,
+.hustler-right-card,
+.hustler-chat-panel,
+.hustler-summary-card {
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid #ece3d8;
+    border-radius: 24px;
+    box-shadow: 0 18px 42px rgba(45, 35, 24, 0.05);
+}
+
+.hustler-plan-card {
+    padding: 14px;
+    margin-top: 10px;
+}
+
+.hustler-plan-card.milestone {
+    border-style: dashed;
+}
+
+.hustler-plan-title,
+.hustler-panel-title,
+.hustler-right-title,
+.hustler-summary-value {
+    font-weight: 800;
+    color: #1f1711;
+}
+
+.hustler-plan-copy {
+    font-size: 13px;
+    margin-top: 6px;
+}
+
+.hustler-plan-empty {
+    margin-top: 10px;
+    border: 1px dashed #dfd3c6;
+    border-radius: 18px;
+    padding: 16px;
+    color: #7f7368;
+    font-size: 13px;
+}
+
+.hustler-main {
+    display: grid;
+    gap: 24px;
+}
+
+.hustler-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 20px;
+    align-items: stretch;
+}
+
+.hustler-summary-card {
+    padding: 22px;
+}
+
+.hustler-summary-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #8a6d54;
+    text-transform: uppercase;
+}
+
+.hustler-summary-value {
+    font-size: 24px;
+    margin-top: 14px;
+}
+
+.hustler-stage-pill {
+    display: inline-flex;
+    margin-top: 18px;
+    background: #f5ebe2;
+    color: #6f4830;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.hustler-chat-panel,
+.hustler-right-card {
+    padding: 22px;
+}
+
+.hustler-panel-head {
+    margin-bottom: 18px;
+}
+
+.hustler-chat-log {
+    min-height: 360px;
+    max-height: 58vh;
+    overflow-y: auto;
+    display: grid;
+    gap: 12px;
+    padding-right: 6px;
+}
+
+.hustler-chat-bubble {
+    max-width: 88%;
+    padding: 14px 16px;
+    border-radius: 18px;
+    line-height: 1.55;
+    white-space: normal;
+}
+
+.hustler-chat-bubble.user {
+    margin-left: auto;
+    background: linear-gradient(135deg, #b70f5a, #d21875);
+    color: #fff;
+}
+
+.hustler-chat-bubble.assistant {
+    background: #fcfaf7;
+    border: 1px solid #ece3d8;
+    color: #211711;
+}
+
+.hustler-chat-form {
+    margin-top: 18px;
+    display: grid;
+    gap: 12px;
+}
+
+.hustler-chat-form textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+
+.hustler-chat-form.compact textarea {
+    min-height: 72px;
+}
+
+.hustler-right {
+    display: grid;
+    gap: 18px;
+    align-content: start;
+}
+
+.hustler-right-title {
+    margin-bottom: 14px;
+}
+
+.hustler-diagnosis-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.hustler-mini-stat {
+    background: #faf5ee;
+    border-radius: 18px;
+    padding: 14px;
+    min-width: 0;
+}
+
+.hustler-mini-stat.full {
+    grid-column: span 2;
+}
+
+.hustler-mini-stat span {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #8b7a6b;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.hustler-mini-stat strong {
+    display: block;
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.hustler-tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.hustler-tag-list span {
+    display: inline-flex;
+    background: #f6efe8;
+    color: #5f4d3d;
+    padding: 8px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.hustler-plain-list {
+    display: grid;
+    gap: 10px;
+    color: #2d221b;
+    line-height: 1.5;
+}
+
+.hustler-plain-list.social {
+    max-height: 48vh;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.hustler-escalation {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #efe7de;
+    display: grid;
+    gap: 6px;
+}
+
+.hustler-escalation strong {
+    color: #241a13;
+}
+
+.hustler-market-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    margin-top: 18px;
+}
+
+.hustler-right-card.tall {
+    min-height: 220px;
+}
+
+.hustler-app.single-page .hustler-main {
+    align-content: start;
+}
+
+@media (max-width: 1180px) {
+    .hustler-app {
+        grid-template-columns: 1fr;
+    }
+
+    .hustler-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .hustler-diagnosis-grid,
+    .hustler-market-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hustler-mini-stat.full {
+        grid-column: auto;
+    }
+}
