@@ -367,6 +367,7 @@ class Hustler extends MY_Controller
         $this->hustler_profile_m->upsert_profile($investorID, [
             'founder_name' => '',
             'founder_email' => '',
+            'profile_photo_url' => '',
             'company_name' => '',
             'idea_summary' => '',
             'stage_label' => 'Needs diagnosis',
@@ -390,6 +391,7 @@ class Hustler extends MY_Controller
         $context = [
             'founder_name' => (string) $profile->founder_name,
             'founder_email' => (string) $profile->founder_email,
+            'profile_photo_url' => isset($profile->profile_photo_url) ? (string) $profile->profile_photo_url : '',
             'company_name' => (string) $profile->company_name,
             'idea_summary' => (string) $profile->idea_summary,
             'stage_label' => (string) $profile->stage_label,
@@ -484,6 +486,7 @@ class Hustler extends MY_Controller
         $update = [
             'founder_name' => $this->_stringFromArray($founderProfile, 'founder_name', $profile->founder_name),
             'founder_email' => $this->_stringFromArray($founderProfile, 'founder_email', $profile->founder_email),
+            'profile_photo_url' => isset($profile->profile_photo_url) ? (string) $profile->profile_photo_url : '',
             'company_name' => $this->_stringFromArray($founderProfile, 'company_name', $profile->company_name),
             'idea_summary' => $this->_stringFromArray($founderProfile, 'idea_summary', $profile->idea_summary),
             'stage_label' => $this->_stringFromArray($founderProfile, 'stage_label', $profile->stage_label),
@@ -606,6 +609,7 @@ class Hustler extends MY_Controller
     {
         return [
             'founder_name' => (string) $profile->founder_name,
+            'profile_photo_url' => isset($profile->profile_photo_url) ? (string) $profile->profile_photo_url : '',
             'company_name' => (string) $profile->company_name,
             'stage_label' => (string) $profile->stage_label,
             'idea_summary' => (string) $profile->idea_summary

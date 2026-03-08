@@ -400,6 +400,86 @@
     align-content: start;
 }
 
+.hustler-app.chat-first .hustler-main {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.hustler-founder-card {
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #ece3d8;
+    border-radius: 24px;
+    box-shadow: 0 18px 42px rgba(45, 35, 24, 0.05);
+    padding: 18px 20px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.hustler-founder-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f5e8dd, #eedbc9);
+    border: 1px solid #e3d2c1;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.hustler-founder-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hustler-founder-avatar span {
+    font-size: 20px;
+    font-weight: 800;
+    color: #6f4830;
+}
+
+.hustler-founder-copy {
+    min-width: 0;
+}
+
+.hustler-founder-name {
+    font-size: 24px;
+    line-height: 1.1;
+    font-weight: 800;
+    color: #1f1711;
+}
+
+.hustler-founder-company {
+    margin-top: 6px;
+    color: #6c625a;
+}
+
+.hustler-chat-panel.centered-chat {
+    padding: 26px;
+}
+
+.hustler-panel-head.center {
+    text-align: center;
+    max-width: 680px;
+    margin: 0 auto 20px;
+}
+
+.hustler-panel-head.center .hustler-panel-title {
+    font-size: 36px;
+    line-height: 1.06;
+    margin: 8px 0;
+}
+
+.hustler-chat-panel.centered-chat .hustler-chat-log {
+    min-height: 420px;
+}
+
+.hustler-chat-panel.centered-chat .hustler-chat-form textarea {
+    min-height: 86px;
+}
+
 @media (max-width: 1180px) {
     .hustler-app {
         grid-template-columns: 1fr;
@@ -416,5 +496,13 @@
 
     .hustler-mini-stat.full {
         grid-column: auto;
+    }
+
+    .hustler-app.chat-first .hustler-main {
+        max-width: 100%;
+    }
+
+    .hustler-panel-head.center .hustler-panel-title {
+        font-size: 30px;
     }
 }

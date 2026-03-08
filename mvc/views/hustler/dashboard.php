@@ -16,8 +16,24 @@
     $priorityActions = isset($diagnosis['priority_actions']) && is_array($diagnosis['priority_actions']) ? $diagnosis['priority_actions'] : [];
     $tools = isset($diagnosis['suggested_tools']) && is_array($diagnosis['suggested_tools']) ? $diagnosis['suggested_tools'] : [];
     $escalation = isset($diagnosis['escalation']) && is_array($diagnosis['escalation']) ? $diagnosis['escalation'] : [];
+
+    $founderName = trim((string) $profile->founder_name);
+    $companyName = trim((string) $profile->company_name);
+    $profilePhoto = isset($profile->profile_photo_url) ? trim((string) $profile->profile_photo_url) : '';
+    $initials = 'FN';
+    if ($founderName !== '') {
+        $parts = preg_split('/\s+/', $founderName);
+        if (is_array($parts) && customCompute($parts)) {
+            $first = strtoupper(substr((string) $parts[0], 0, 1));
+            $second = isset($parts[1]) ? strtoupper(substr((string) $parts[1], 0, 1)) : '';
+            $initials = trim($first . $second);
+            if ($initials === '') {
+                $initials = 'FN';
+            }
+        }
+    }
 ?>
-<div class="hustler-app">
+<div class="hustler-app chat-first">
     <aside class="hustler-sidebar">
         <div class="hustler-sidebar-top">
             <div class="hustler-sidebar-brand">Hustler</div>
@@ -66,26 +82,26 @@
     </aside>
 
     <main class="hustler-main">
-        <section class="hustler-hero">
-            <div>
-                <div class="hustler-eyebrow">Investor Demo Workspace</div>
-                <h1>Founder diagnostic + execution routing</h1>
-                <p>Use the chat to capture the founder context. The engine stores it, updates memory, diagnoses the business, and writes the next weekly plan.</p>
+        <section class="hustler-founder-card">
+            <div class="hustler-founder-avatar">
+                <?php if ($profilePhoto !== '') { ?>
+                    <img id="hustler-founder-avatar-image" src="<?=htmlspecialchars($profilePhoto)?>" alt="Founder profile photo">
+                <?php } else { ?>
+                    <span id="hustler-founder-avatar-fallback"><?=htmlspecialchars($initials)?></span>
+                <?php } ?>
             </div>
-            <div class="hustler-summary-card">
-                <div class="hustler-summary-label">Current Founder Snapshot</div>
-                <div class="hustler-summary-value" id="hustler-founder-name"><?=htmlspecialchars($profile->founder_name !== '' ? $profile->founder_name : 'Founder not identified yet')?></div>
-                <div class="hustler-summary-meta" id="hustler-company-name"><?=htmlspecialchars($profile->company_name !== '' ? $profile->company_name : 'Company still being defined')?></div>
+            <div class="hustler-founder-copy">
+                <div class="hustler-founder-name" id="hustler-founder-name"><?=htmlspecialchars($founderName !== '' ? $founderName : 'Founder profile pending')?></div>
+                <div class="hustler-founder-company" id="hustler-company-name"><?=htmlspecialchars($companyName !== '' ? $companyName : 'Add founder company in the DB to display it here')?></div>
                 <div class="hustler-stage-pill" id="hustler-stage-label"><?=htmlspecialchars($profile->stage_label)?></div>
             </div>
         </section>
 
-        <section class="hustler-chat-panel">
-            <div class="hustler-panel-head">
-                <div>
-                    <div class="hustler-panel-title">Founder Intake + AI Mentor</div>
-                    <div class="hustler-panel-copy">Collect the founder details, keep long context, and convert the discussion into concrete execution steps.</div>
-                </div>
+        <section class="hustler-chat-panel centered-chat">
+            <div class="hustler-panel-head center">
+                <div class="hustler-eyebrow">Welcome to Hustler AI</div>
+                <div class="hustler-panel-title">Tell me about your startup idea</div>
+                <div class="hustler-panel-copy">Start with the idea/company, founder strengths, available time, budget, and current traction. I will diagnose and build your weekly action plan.</div>
             </div>
 
             <div class="hustler-chat-log" id="hustler-chat-log">
@@ -96,13 +112,13 @@
                         </div>
                     <?php } ?>
                 <?php } else { ?>
-                    <div class="hustler-chat-bubble assistant">Start by describing the founder, the startup idea, available time, budget, traction, and the main constraint.</div>
+                    <div class="hustler-chat-bubble assistant">Welcome to Hatchers Hustler. What is your company idea, who is the founder, and what are your current constraints?</div>
                 <?php } ?>
             </div>
 
             <div class="hustler-chat-form">
-                <textarea id="hustler-chat-input" placeholder="Example: Founder is a solo operator, has 10 hours a week, $3k budget, idea is a concierge visa advisory service, no traction yet, and can access expat communities directly."></textarea>
-                <button id="hustler-chat-send" class="hustlers-primary-btn" type="button">Run Diagnosis</button>
+                <textarea id="hustler-chat-input" placeholder="Example: We are building X for Y. Founder has 15h/week, $5k budget, strong sales skills, early waitlist of 40 leads, and needs a 30-day launch plan."></textarea>
+                <button id="hustler-chat-send" class="hustlers-primary-btn" type="button">Start Diagnosis</button>
             </div>
         </section>
     </main>
@@ -180,6 +196,30 @@
     (function() {
         function escapeHtml(text) {
             return $('<div>').text(text || '').html();
+        }
+
+        function founderInitials(name) {
+            name = (name || '').trim();
+            if (!name) {
+                return 'FN';
+            }
+            var parts = name.split(/\s+/);
+            var first = parts[0] ? parts[0].charAt(0).toUpperCase() : '';
+            var second = parts[1] ? parts[1].charAt(0).toUpperCase() : '';
+            return (first + second) || 'FN';
+        }
+
+        function renderFounderAvatar(name, photoUrl) {
+            var $avatar = $('.hustler-founder-avatar');
+            if (!$avatar.length) {
+                return;
+            }
+
+            if (photoUrl) {
+                $avatar.html('<img id="hustler-founder-avatar-image" src="' + escapeHtml(photoUrl) + '" alt="Founder profile photo">');
+            } else {
+                $avatar.html('<span id="hustler-founder-avatar-fallback">' + escapeHtml(founderInitials(name)) + '</span>');
+            }
         }
 
         function appendChat(role, text) {
@@ -262,9 +302,10 @@
                     renderPlan(res.action_items || []);
                     renderDiagnosis(res.diagnosis || {});
                     if (res.profile) {
-                        $('#hustler-founder-name').text(res.profile.founder_name || 'Founder not identified yet');
-                        $('#hustler-company-name').text(res.profile.company_name || 'Company still being defined');
+                        $('#hustler-founder-name').text(res.profile.founder_name || 'Founder profile pending');
+                        $('#hustler-company-name').text(res.profile.company_name || 'Add founder company in the DB to display it here');
                         $('#hustler-stage-label').text(res.profile.stage_label || 'Needs diagnosis');
+                        renderFounderAvatar(res.profile.founder_name || '', res.profile.profile_photo_url || '');
                     }
                 } else {
                     appendChat('assistant', (res && res.error) ? res.error : 'AI error.');
@@ -272,7 +313,7 @@
             }, 'json').fail(function() {
                 appendChat('assistant', 'Request failed. Please try again.');
             }).always(function() {
-                $('#hustler-chat-send').prop('disabled', false).text('Run Diagnosis');
+                $('#hustler-chat-send').prop('disabled', false).text('Start Diagnosis');
             });
         }
 

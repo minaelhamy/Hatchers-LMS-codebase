@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS hustler_founder_profiles (
     hustler_investor_id INT(11) NOT NULL,
     founder_name VARCHAR(180) NULL,
     founder_email VARCHAR(190) NULL,
+    profile_photo_url VARCHAR(255) NULL,
     company_name VARCHAR(190) NULL,
     idea_summary TEXT NULL,
     stage_label VARCHAR(120) NOT NULL DEFAULT 'Needs diagnosis',
@@ -79,7 +80,7 @@ CREATE TABLE IF NOT EXISTS hustler_market_assets (
 -- Replace the example values below with your investor test credentials as needed.
 -- Password hash generated with: sha512(encryption_key + plain_password)
 INSERT INTO hustler_investors (name, email, username, password, is_active)
-SELECT 'Investor Demo', 'demo@hatchers.ai', 'investor-demo', 'CHANGE_THIS_TO_A_REAL_HASH', 1
+SELECT 'Investor Demo', 'demo@hatchers.ai', 'investor-demo', '763a92eef16454b78593d4e264d64ee1', 1
 WHERE NOT EXISTS (
     SELECT 1 FROM hustler_investors WHERE username = 'investor-demo'
 );
