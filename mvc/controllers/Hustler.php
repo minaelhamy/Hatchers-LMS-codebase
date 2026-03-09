@@ -272,8 +272,8 @@ class Hustler extends MY_Controller
             }
 
             $assetData = [
-                'market_overview' => $this->_stringOrFallback($structured, 'market_overview'),
-                'ideal_customer_profile' => $this->_stringOrFallback($structured, 'ideal_customer_profile'),
+                'market_overview' => $this->_textFieldOrFallback($structured, 'market_overview'),
+                'ideal_customer_profile' => $this->_textFieldOrFallback($structured, 'ideal_customer_profile'),
                 'competitor_patterns_json' => json_encode($this->_normalizeList(isset($structured['competitor_patterns']) ? $structured['competitor_patterns'] : [])),
                 'distribution_angles_json' => json_encode($this->_normalizeList(isset($structured['distribution_angles']) ? $structured['distribution_angles'] : [])),
                 'social_posts_json' => json_encode($this->_normalizeList(isset($structured['social_posts']) ? $structured['social_posts'] : [], $postCount)),
@@ -934,7 +934,41 @@ class Hustler extends MY_Controller
             return '';
         }
 
-        return trim((string) $array[$key]);
+        return $this->_normalizeText($array[$key]);
+    }
+
+    private function _textFieldOrFallback($array, $key)
+    {
+        if (!is_array($array) || !isset($array[$key])) {
+            return '';
+        }
+
+        return $this->_normalizeText($array[$key]);
+    }
+
+    private function _normalizeText($value)
+    {
+        if (is_array($value)) {
+            $parts = [];
+            foreach ($value as $item) {
+                if (is_array($item)) {
+                    $parts[] = $this->_normalizeText($item);
+                } else {
+                    $item = trim((string) $item);
+                    if ($item !== '') {
+                        $parts[] = $item;
+                    }
+                }
+            }
+
+            return trim(implode("\n", $parts));
+        }
+
+        if (is_object($value)) {
+            return trim(json_encode($value));
+        }
+
+        return trim((string) $value);
     }
 
     private function _hash($string)
