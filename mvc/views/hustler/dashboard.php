@@ -198,6 +198,63 @@
             return $('<div>').text(text || '').html();
         }
 
+        function formatInline(text) {
+            var safe = escapeHtml(text || '');
+            safe = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            safe = safe.replace(/`([^`]+)`/g, '<code>$1</code>');
+            return safe;
+        }
+
+        function formatAssistantText(text) {
+            var raw = (text || '').replace(/\r/g, '');
+            var lines = raw.split('\n');
+            var html = '';
+            var listMode = null;
+
+            function closeList() {
+                if (listMode === 'ul') html += '</ul>';
+                if (listMode === 'ol') html += '</ol>';
+                listMode = null;
+            }
+
+            lines.forEach(function(line) {
+                var trimmed = line.trim();
+                if (!trimmed) {
+                    closeList();
+                    return;
+                }
+
+                if (/^[-*]\s+/.test(trimmed)) {
+                    if (listMode !== 'ul') {
+                        closeList();
+                        html += '<ul>';
+                        listMode = 'ul';
+                    }
+                    html += '<li>' + formatInline(trimmed.replace(/^[-*]\s+/, '')) + '</li>';
+                    return;
+                }
+
+                if (/^\d+\.\s+/.test(trimmed)) {
+                    if (listMode !== 'ol') {
+                        closeList();
+                        html += '<ol>';
+                        listMode = 'ol';
+                    }
+                    html += '<li>' + formatInline(trimmed.replace(/^\d+\.\s+/, '')) + '</li>';
+                    return;
+                }
+
+                closeList();
+                html += '<p>' + formatInline(trimmed) + '</p>';
+            });
+
+            closeList();
+            if (!html) {
+                html = '<p></p>';
+            }
+            return html;
+        }
+
         function founderInitials(name) {
             name = (name || '').trim();
             if (!name) {
@@ -224,7 +281,8 @@
 
         function appendChat(role, text) {
             var bubbleClass = role === 'user' ? 'user' : 'assistant';
-            $('#hustler-chat-log').append('<div class="hustler-chat-bubble ' + bubbleClass + '">' + escapeHtml(text).replace(/\n/g, '<br>') + '</div>');
+            var body = role === 'assistant' ? formatAssistantText(text) : '<p>' + escapeHtml(text).replace(/\n/g, '<br>') + '</p>';
+            $('#hustler-chat-log').append('<div class="hustler-chat-bubble ' + bubbleClass + '">' + body + '</div>');
             var log = $('#hustler-chat-log').get(0);
             if (log) {
                 log.scrollTop = log.scrollHeight;
@@ -233,7 +291,7 @@
 
         function appendPendingBubble() {
             var bubbleId = 'hustler-pending-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
-            var html = '<div class="hustler-chat-bubble assistant pending" id="' + bubbleId + '"><span class="hustler-thinking">Thinking</span><span class="hustler-thinking-dots"><i></i><i></i><i></i></span></div>';
+            var html = '<div class="hustler-chat-bubble assistant pending" id="' + bubbleId + '"><span class="hustler-spinner" aria-hidden="true"></span><span class="hustler-thinking">Thinking...</span></div>';
             $('#hustler-chat-log').append(html);
             var log = $('#hustler-chat-log').get(0);
             if (log) {
@@ -250,7 +308,7 @@
             }
 
             $bubble.removeClass('pending');
-            $bubble.html(escapeHtml(text || '').replace(/\n/g, '<br>'));
+            $bubble.html(formatAssistantText(text || ''));
             var log = $('#hustler-chat-log').get(0);
             if (log) {
                 log.scrollTop = log.scrollHeight;

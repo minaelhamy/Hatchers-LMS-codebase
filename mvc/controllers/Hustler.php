@@ -187,7 +187,10 @@ class Hustler extends MY_Controller
         $responseText = $this->_extractResponseText($response['data']);
         $structured = $this->_decodeStructuredResponse($responseText);
 
-        $assistantReply = isset($structured['assistant_reply']) ? trim((string) $structured['assistant_reply']) : trim((string) $responseText);
+        $assistantReply = isset($structured['assistant_reply']) ? trim((string) $structured['assistant_reply']) : '';
+        if ($assistantReply === '') {
+            $assistantReply = $this->_buildReadableReplyFromStructured($structured, trim((string) $responseText), $discoveryMode);
+        }
         if ($assistantReply === '') {
             $assistantReply = 'I need a little more detail to give you a precise plan. Tell me more about the founder, idea, traction, and constraints.';
         }
@@ -681,6 +684,51 @@ class Hustler extends MY_Controller
         }
 
         return $mapped;
+    }
+
+    private function _buildReadableReplyFromStructured($structured, $fallbackText, $discoveryMode = false)
+    {
+        if (!is_array($structured) || empty($structured)) {
+            return $fallbackText;
+        }
+
+        if ($discoveryMode) {
+            if (isset($structured['memory_summary'])) {
+                $memory = trim((string) $structured['memory_summary']);
+                if ($memory !== '') {
+                    return $memory;
+                }
+            }
+            return $fallbackText;
+        }
+
+        $lines = [];
+        if (isset($structured['diagnosis']['current_status'])) {
+            $lines[] = 'Status: ' . trim((string) $structured['diagnosis']['current_status']);
+        }
+        if (isset($structured['diagnosis']['bottleneck_identification'])) {
+            $lines[] = 'Bottleneck: ' . trim((string) $structured['diagnosis']['bottleneck_identification']);
+        }
+
+        if (isset($structured['priority_actions']) && is_array($structured['priority_actions']) && customCompute($structured['priority_actions'])) {
+            $lines[] = '';
+            $lines[] = 'Top next steps:';
+            $index = 1;
+            foreach ($structured['priority_actions'] as $action) {
+                $action = trim((string) $action);
+                if ($action === '') {
+                    continue;
+                }
+                $lines[] = $index . '. ' . $action;
+                $index++;
+                if ($index > 3) {
+                    break;
+                }
+            }
+        }
+
+        $text = trim(implode("\n", $lines));
+        return $text !== '' ? $text : $fallbackText;
     }
 
     private function _getOpenAIKey()
