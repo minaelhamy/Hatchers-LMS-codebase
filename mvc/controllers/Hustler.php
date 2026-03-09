@@ -272,7 +272,7 @@ class Hustler extends MY_Controller
             }
 
             $socialPosts = $this->_extractSocialPosts($structured, $postCount);
-            $postImages = $this->_generateSocialPostImages($apiKey, $socialPosts, $profile, 9);
+            $postImages = $this->_generateSocialPostImages($apiKey, $socialPosts, $profile, 4);
 
             $marketOverview = $this->_textFieldOrFallback($structured, 'market_overview');
             if ($marketOverview === '') {
@@ -1072,7 +1072,7 @@ class Hustler extends MY_Controller
         $payload = [
             'model' => 'gpt-image-1',
             'prompt' => $prompt,
-            'size' => '1024x1024'
+            'size' => '512x512'
         ];
 
         $ch = curl_init('https://api.openai.com/v1/images/generations');

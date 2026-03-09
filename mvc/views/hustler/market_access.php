@@ -51,6 +51,15 @@
                 <textarea id="hustler-market-focus" placeholder="Optional focus: geography, ICP, channel, or competitor angle"></textarea>
                 <button id="hustler-market-generate" class="hustlers-primary-btn" type="button">Generate</button>
             </div>
+            <div class="hustler-generation-status" id="hustler-generation-status" style="display:none;">
+                <div class="hustler-generation-row">
+                    <span class="hustler-spinner"></span>
+                    <span id="hustler-generation-label">Generating market insights and post images...</span>
+                </div>
+                <div class="hustler-progress-track">
+                    <div class="hustler-progress-fill" id="hustler-progress-fill"></div>
+                </div>
+            </div>
 
             <div class="hustler-market-grid">
                 <div class="hustler-right-card tall">
@@ -156,6 +165,17 @@
             var focus = ($('#hustler-market-focus').val() || '').trim();
             var $button = $(this);
             $button.prop('disabled', true).text('Generating...');
+            $('#hustler-generation-status').show();
+            $('#hustler-progress-fill').css('width', '8%');
+
+            var progressValue = 8;
+            var progressTimer = setInterval(function() {
+                progressValue += Math.random() * 8;
+                if (progressValue > 90) {
+                    progressValue = 90;
+                }
+                $('#hustler-progress-fill').css('width', progressValue + '%');
+            }, 700);
 
             $.post('<?=base_url('hustler/generate-market-access')?>', { focus: focus }, function(res) {
                 if (!(res && res.ok && res.market_asset)) {
@@ -178,6 +198,12 @@
                 }
                 alert(serverMessage);
             }).always(function() {
+                clearInterval(progressTimer);
+                $('#hustler-progress-fill').css('width', '100%');
+                setTimeout(function() {
+                    $('#hustler-generation-status').hide();
+                    $('#hustler-progress-fill').css('width', '0%');
+                }, 450);
                 $button.prop('disabled', false).text('Generate');
             });
         });
