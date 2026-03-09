@@ -118,7 +118,7 @@
 
             <div class="hustler-chat-form">
                 <textarea id="hustler-chat-input" placeholder="Example: We are building X for Y. Founder has 15h/week, $5k budget, strong sales skills, early waitlist of 40 leads, and needs a 30-day launch plan."></textarea>
-                <button id="hustler-chat-send" class="hustlers-primary-btn" type="button">Start Diagnosis</button>
+                <button id="hustler-chat-send" class="hustlers-primary-btn" type="button">Send Message</button>
             </div>
         </section>
     </main>
@@ -231,6 +231,32 @@
             }
         }
 
+        function appendPendingBubble() {
+            var bubbleId = 'hustler-pending-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
+            var html = '<div class="hustler-chat-bubble assistant pending" id="' + bubbleId + '"><span class="hustler-thinking">Thinking</span><span class="hustler-thinking-dots"><i></i><i></i><i></i></span></div>';
+            $('#hustler-chat-log').append(html);
+            var log = $('#hustler-chat-log').get(0);
+            if (log) {
+                log.scrollTop = log.scrollHeight;
+            }
+            return bubbleId;
+        }
+
+        function resolvePendingBubble(bubbleId, text) {
+            var $bubble = $('#' + bubbleId);
+            if (!$bubble.length) {
+                appendChat('assistant', text);
+                return;
+            }
+
+            $bubble.removeClass('pending');
+            $bubble.html(escapeHtml(text || '').replace(/\n/g, '<br>'));
+            var log = $('#hustler-chat-log').get(0);
+            if (log) {
+                log.scrollTop = log.scrollHeight;
+            }
+        }
+
         function renderPlan(items) {
             var tasks = [];
             var milestones = [];
@@ -294,26 +320,46 @@
 
             appendChat('user', message);
             $input.val('');
-            $('#hustler-chat-send').prop('disabled', true).text('Running...');
+            $('#hustler-chat-send').prop('disabled', true).text('Generating...');
+            var pendingBubbleId = appendPendingBubble();
+            var requestStartedAt = Date.now();
+            var holdMs = 5000 + Math.floor(Math.random() * 5001);
+
+            function finishResponse(renderFn) {
+                var elapsed = Date.now() - requestStartedAt;
+                var wait = holdMs - elapsed;
+                if (wait < 0) {
+                    wait = 0;
+                }
+
+                setTimeout(function() {
+                    renderFn();
+                    $('#hustler-chat-send').prop('disabled', false).text('Send Message');
+                }, wait);
+            }
 
             $.post('<?=base_url('hustler/chat')?>', { message: message }, function(res) {
                 if (res && res.ok) {
-                    appendChat('assistant', res.reply || '');
-                    renderPlan(res.action_items || []);
-                    renderDiagnosis(res.diagnosis || {});
-                    if (res.profile) {
-                        $('#hustler-founder-name').text(res.profile.founder_name || 'Founder profile pending');
-                        $('#hustler-company-name').text(res.profile.company_name || 'Add founder company in the DB to display it here');
-                        $('#hustler-stage-label').text(res.profile.stage_label || 'Needs diagnosis');
-                        renderFounderAvatar(res.profile.founder_name || '', res.profile.profile_photo_url || '');
-                    }
+                    finishResponse(function() {
+                        resolvePendingBubble(pendingBubbleId, res.reply || '');
+                        renderPlan(res.action_items || []);
+                        renderDiagnosis(res.diagnosis || {});
+                        if (res.profile) {
+                            $('#hustler-founder-name').text(res.profile.founder_name || 'Founder profile pending');
+                            $('#hustler-company-name').text(res.profile.company_name || 'Add founder company in the DB to display it here');
+                            $('#hustler-stage-label').text(res.profile.stage_label || 'Needs diagnosis');
+                            renderFounderAvatar(res.profile.founder_name || '', res.profile.profile_photo_url || '');
+                        }
+                    });
                 } else {
-                    appendChat('assistant', (res && res.error) ? res.error : 'AI error.');
+                    finishResponse(function() {
+                        resolvePendingBubble(pendingBubbleId, (res && res.error) ? res.error : 'AI error.');
+                    });
                 }
             }, 'json').fail(function() {
-                appendChat('assistant', 'Request failed. Please try again.');
-            }).always(function() {
-                $('#hustler-chat-send').prop('disabled', false).text('Start Diagnosis');
+                finishResponse(function() {
+                    resolvePendingBubble(pendingBubbleId, 'Request failed. Please try again.');
+                });
             });
         }
 

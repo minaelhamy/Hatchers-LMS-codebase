@@ -167,10 +167,13 @@ class Hustler extends MY_Controller
         $history = $this->hustler_conversation_m->get_for_profile($profile->hustler_founder_profile_id, 24);
         $history = array_reverse($history);
 
+        $userMessageCount = $this->_countUserMessages($profile->hustler_founder_profile_id);
+        $discoveryMode = $this->_shouldUseDiscoveryMode($profile, $userMessageCount);
+
         $payload = [
             'model' => customCompute($settings) ? $settings->model : 'gpt-4o-mini',
             'input' => $this->_mapConversationForOpenAI($history),
-            'instructions' => $this->_buildDiagnosticInstructions($profile),
+            'instructions' => $this->_buildDiagnosticInstructions($profile, $discoveryMode, $userMessageCount),
             'max_output_tokens' => customCompute($settings) ? (int) $settings->max_tokens : 1200,
             'temperature' => customCompute($settings) ? (float) $settings->temperature : 0.4
         ];
@@ -197,15 +200,21 @@ class Hustler extends MY_Controller
             'created_at' => date('Y-m-d H:i:s')
         ]);
 
-        $profile = $this->_syncProfileFromStructuredOutput($profile, $structured);
-        $items = $this->_syncActionItems($profile->hustler_founder_profile_id, $structured);
+        $readyForDiagnosis = isset($structured['ready_for_diagnosis']) ? (bool) $structured['ready_for_diagnosis'] : !$discoveryMode;
+        $profile = $this->_syncProfileFromStructuredOutput($profile, $structured, $readyForDiagnosis);
+        if ($readyForDiagnosis) {
+            $items = $this->_syncActionItems($profile->hustler_founder_profile_id, $structured);
+        } else {
+            $items = $this->_getCurrentActionItems($profile->hustler_founder_profile_id);
+        }
 
         $this->_json([
             'ok' => true,
             'reply' => $assistantReply,
             'action_items' => $items,
             'diagnosis' => $this->_decodeJsonField($profile->last_diagnosis_json),
-            'profile' => $this->_profileViewData($profile)
+            'profile' => $this->_profileViewData($profile),
+            'ready_for_diagnosis' => $readyForDiagnosis
         ]);
     }
 
@@ -386,7 +395,7 @@ class Hustler extends MY_Controller
         return $this->hustler_profile_m->get_by_investor($investorID);
     }
 
-    private function _buildDiagnosticInstructions($profile)
+    private function _buildDiagnosticInstructions($profile, $discoveryMode = false, $userMessageCount = 0)
     {
         $context = [
             'founder_name' => (string) $profile->founder_name,
@@ -404,16 +413,33 @@ class Hustler extends MY_Controller
             'memory_summary' => (string) $profile->memory_summary
         ];
 
+        if ($discoveryMode) {
+            return "You are Hatchers Hustler, an engaged startup mentor."
+                . "\nYou are in discovery mode. Do NOT generate final diagnosis, weekly plans, or milestone/task outputs yet."
+                . "\nGoal: ask sharp follow-up questions, one or two at a time, to understand founder context deeply."
+                . "\nBe conversational and natural, like a strong ChatGPT-style coach."
+                . "\nCollect: founder background, exact idea, ICP, current traction, available weekly time, available capital, distribution access, and biggest constraints."
+                . "\nReturn JSON only with keys:"
+                . "\nassistant_reply (string),"
+                . "\nready_for_diagnosis (boolean, keep false unless enough context for a solid diagnosis),"
+                . "\nfounder_profile (object with founder_name, founder_email, profile_photo_url, company_name, idea_summary, stage_label, skills_summary, weekly_time_commitment, capital_available, traction_summary, constraints_summary, competitor_notes),"
+                . "\nmemory_summary (string)."
+                . "\nCurrent user message count: " . (int) $userMessageCount
+                . "\nExisting founder context:\n" . json_encode($context);
+        }
+
         return "You are Hatchers Hustler, a diagnosis-first execution routing engine for founders."
             . "\nYou are not a generic chatbot."
             . "\nYour job is to intake founder context, classify the founder stage, diagnose the business, identify the sharpest bottleneck, and output the next best weekly plan."
+            . "\nKeep the tone conversational and engaging while still producing structured output."
             . "\nAlways reason through: founder-idea fit first, then DFV (desirability, feasibility, viability), then gaps, then priority actions."
             . "\nIf the founder cannot directly access the first 5-10 customers, cannot book 10 discovery calls next week, depends on enterprise procurement, big-box retail, heavy capital inventory, a large dev team before validation, or a marketplace without supply control, call that out explicitly."
             . "\nAlways factor in time, capital, skills, network access, and founder constraints."
             . "\nWhen information is missing, ask for the most leverage-driving missing detail while still giving a provisional plan."
             . "\nReturn JSON only with keys:"
             . "\nassistant_reply (string for the user-facing message),"
-            . "\nfounder_profile (object with founder_name, founder_email, company_name, idea_summary, stage_label, skills_summary, weekly_time_commitment, capital_available, traction_summary, constraints_summary, competitor_notes),"
+            . "\nready_for_diagnosis (boolean, true),"
+            . "\nfounder_profile (object with founder_name, founder_email, profile_photo_url, company_name, idea_summary, stage_label, skills_summary, weekly_time_commitment, capital_available, traction_summary, constraints_summary, competitor_notes),"
             . "\ndiagnosis (object with current_status, founder_idea_fit, dfv_assessment, bottleneck_identification),"
             . "\ngaps (array of short strings covering access, clarity, distribution, unit economics, execution as applicable),"
             . "\npriority_actions (array with 1 to 3 concise action steps),"
@@ -465,7 +491,7 @@ class Hustler extends MY_Controller
         return $messages;
     }
 
-    private function _syncProfileFromStructuredOutput($profile, $structured)
+    private function _syncProfileFromStructuredOutput($profile, $structured, $readyForDiagnosis = true)
     {
         if (!is_array($structured) || empty($structured)) {
             return $profile;
@@ -486,7 +512,7 @@ class Hustler extends MY_Controller
         $update = [
             'founder_name' => $this->_stringFromArray($founderProfile, 'founder_name', $profile->founder_name),
             'founder_email' => $this->_stringFromArray($founderProfile, 'founder_email', $profile->founder_email),
-            'profile_photo_url' => isset($profile->profile_photo_url) ? (string) $profile->profile_photo_url : '',
+            'profile_photo_url' => $this->_stringFromArray($founderProfile, 'profile_photo_url', isset($profile->profile_photo_url) ? $profile->profile_photo_url : ''),
             'company_name' => $this->_stringFromArray($founderProfile, 'company_name', $profile->company_name),
             'idea_summary' => $this->_stringFromArray($founderProfile, 'idea_summary', $profile->idea_summary),
             'stage_label' => $this->_stringFromArray($founderProfile, 'stage_label', $profile->stage_label),
@@ -497,16 +523,18 @@ class Hustler extends MY_Controller
             'constraints_summary' => $this->_stringFromArray($founderProfile, 'constraints_summary', $profile->constraints_summary),
             'competitor_notes' => $this->_stringFromArray($founderProfile, 'competitor_notes', $profile->competitor_notes),
             'memory_summary' => $this->_stringOrDefault(isset($structured['memory_summary']) ? $structured['memory_summary'] : '', $profile->memory_summary),
-            'last_diagnosis_json' => json_encode([
+            'updated_at' => date('Y-m-d H:i:s')
+        ];
+        if ($readyForDiagnosis) {
+            $update['last_diagnosis_json'] = json_encode([
                 'diagnosis' => $diagnosis,
                 'gaps' => $this->_normalizeList(isset($structured['gaps']) ? $structured['gaps'] : []),
                 'priority_actions' => $this->_normalizeList(isset($structured['priority_actions']) ? $structured['priority_actions'] : [], 3),
                 'suggested_tools' => $this->_normalizeList(isset($structured['suggested_tools']) ? $structured['suggested_tools'] : []),
                 'escalation' => isset($structured['escalation']) ? $structured['escalation'] : []
-            ]),
-            'last_plan_json' => json_encode($plan),
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
+            ]);
+            $update['last_plan_json'] = json_encode($plan);
+        }
 
         $this->hustler_profile_m->upsert_profile($profile->hustler_investor_id, $update);
         return $this->hustler_profile_m->get_by_investor($profile->hustler_investor_id);
@@ -614,6 +642,45 @@ class Hustler extends MY_Controller
             'stage_label' => (string) $profile->stage_label,
             'idea_summary' => (string) $profile->idea_summary
         ];
+    }
+
+    private function _countUserMessages($profileID)
+    {
+        return (int) $this->db->where('hustler_founder_profile_id', $profileID)
+            ->where('role', 'user')
+            ->count_all_results('hustler_conversations');
+    }
+
+    private function _shouldUseDiscoveryMode($profile, $userMessageCount)
+    {
+        if ($userMessageCount < 3) {
+            return true;
+        }
+
+        $idea = trim((string) $profile->idea_summary);
+        $time = trim((string) $profile->weekly_time_commitment);
+        $capital = trim((string) $profile->capital_available);
+        $traction = trim((string) $profile->traction_summary);
+
+        return ($idea === '' || $time === '' || $capital === '' || $traction === '');
+    }
+
+    private function _getCurrentActionItems($profileID)
+    {
+        $items = $this->hustler_action_item_m->get_for_profile($profileID);
+        $mapped = [];
+        if (customCompute($items)) {
+            foreach ($items as $item) {
+                $mapped[] = [
+                    'item_type' => $item->item_type,
+                    'title' => $item->title,
+                    'description' => $item->description,
+                    'status' => $item->status
+                ];
+            }
+        }
+
+        return $mapped;
     }
 
     private function _getOpenAIKey()
