@@ -20,6 +20,9 @@
     $founderName = trim((string) $profile->founder_name);
     $companyName = trim((string) $profile->company_name);
     $profilePhoto = isset($profile->profile_photo_url) ? trim((string) $profile->profile_photo_url) : '';
+    $marketAccessAllowed = isset($market_access_allowed) ? (bool) $market_access_allowed : false;
+    $marketAccessReason = isset($market_access_reason) ? (string) $market_access_reason : '';
+    $marketGateFlash = (string) $this->session->flashdata('hustler_market_gate_error');
     $initials = 'FN';
     if ($founderName !== '') {
         $parts = preg_split('/\s+/', $founderName);
@@ -42,7 +45,11 @@
 
         <nav class="hustler-sidebar-nav">
             <a class="active" href="<?=base_url('hustler/dashboard')?>">Weekly Plan</a>
-            <a href="<?=base_url('hustler/market-access')?>">Market Access</a>
+            <?php if ($marketAccessAllowed) { ?>
+                <a href="<?=base_url('hustler/market-access')?>">Market Access</a>
+            <?php } else { ?>
+                <a href="#" class="disabled" title="<?=htmlspecialchars($marketAccessReason !== '' ? $marketAccessReason : 'Complete founder context and weekly plan first')?>">Market Access (Locked)</a>
+            <?php } ?>
             <a href="<?=base_url('hustler/logout')?>">Log Out</a>
         </nav>
 
@@ -82,6 +89,12 @@
     </aside>
 
     <main class="hustler-main">
+        <?php if ($marketGateFlash !== '' || (!$marketAccessAllowed && $marketAccessReason !== '')) { ?>
+            <div class="hustler-gate-message">
+                <?=htmlspecialchars($marketGateFlash !== '' ? $marketGateFlash : $marketAccessReason)?>
+            </div>
+        <?php } ?>
+
         <section class="hustler-founder-card">
             <div class="hustler-founder-avatar">
                 <?php if ($profilePhoto !== '') { ?>

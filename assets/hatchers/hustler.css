@@ -165,6 +165,12 @@
     border-color: #e7ddd2;
 }
 
+.hustler-sidebar-nav a.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .hustler-sidebar-section {
     margin-top: 20px;
 }
@@ -536,6 +542,16 @@
     display: flex;
     gap: 16px;
     align-items: center;
+}
+
+.hustler-gate-message {
+    background: #fff4e8;
+    border: 1px solid #f0d5b9;
+    color: #7a4f2a;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 600;
 }
 
 .hustler-founder-avatar {

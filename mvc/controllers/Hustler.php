@@ -105,6 +105,7 @@ class Hustler extends MY_Controller
         $profile = $this->_ensureProfile($investor->hustler_investor_id);
         $conversations = $this->hustler_conversation_m->get_for_profile($profile->hustler_founder_profile_id, 18);
         $conversations = array_reverse($conversations);
+        $marketGate = $this->_marketAccessGate($profile);
 
         $this->_render('hustler/dashboard', [
             'page_title' => 'Hustler Workspace',
@@ -114,7 +115,9 @@ class Hustler extends MY_Controller
             'market_asset' => $this->hustler_market_asset_m->get_latest_for_profile($profile->hustler_founder_profile_id),
             'chat_rows' => $conversations,
             'diagnosis' => $this->_decodeJsonField($profile->last_diagnosis_json),
-            'plan' => $this->_decodeJsonField($profile->last_plan_json)
+            'plan' => $this->_decodeJsonField($profile->last_plan_json),
+            'market_access_allowed' => $marketGate['allowed'],
+            'market_access_reason' => $marketGate['reason']
         ]);
     }
 
@@ -122,6 +125,12 @@ class Hustler extends MY_Controller
     {
         $investor = $this->_requireAuth();
         $profile = $this->_ensureProfile($investor->hustler_investor_id);
+        $marketGate = $this->_marketAccessGate($profile);
+        if (!$marketGate['allowed']) {
+            $this->session->set_flashdata('hustler_market_gate_error', $marketGate['reason']);
+            redirect(base_url('hustler/dashboard'));
+            return;
+        }
 
         $this->_render('hustler/market_access', [
             'page_title' => 'Market Access',
@@ -232,6 +241,11 @@ class Hustler extends MY_Controller
             }
 
             $profile = $this->_ensureProfile($investor->hustler_investor_id);
+            $marketGate = $this->_marketAccessGate($profile);
+            if (!$marketGate['allowed']) {
+                $this->_json(['ok' => false, 'error' => $marketGate['reason']]);
+                return;
+            }
             $apiKey = $this->_getOpenAIKey();
             if ($apiKey === '') {
                 $this->_json(['ok' => false, 'error' => 'OpenAI API key is not configured.']);
@@ -714,6 +728,37 @@ class Hustler extends MY_Controller
         }
 
         return $mapped;
+    }
+
+    private function _marketAccessGate($profile)
+    {
+        $required = [
+            'idea_summary' => trim((string) $profile->idea_summary),
+            'weekly_time_commitment' => trim((string) $profile->weekly_time_commitment),
+            'capital_available' => trim((string) $profile->capital_available),
+            'traction_summary' => trim((string) $profile->traction_summary)
+        ];
+
+        foreach ($required as $value) {
+            if ($value === '') {
+                return [
+                    'allowed' => false,
+                    'reason' => 'Market Access is locked until founder context is complete and a weekly plan is generated.'
+                ];
+            }
+        }
+
+        $plan = $this->_decodeJsonField($profile->last_plan_json);
+        $hasTasks = isset($plan['tasks']) && is_array($plan['tasks']) && customCompute($plan['tasks']);
+        $hasMilestones = isset($plan['milestones']) && is_array($plan['milestones']) && customCompute($plan['milestones']);
+        if (!$hasTasks && !$hasMilestones) {
+            return [
+                'allowed' => false,
+                'reason' => 'Market Access is locked until AI Mentor generates your weekly tasks and milestones.'
+            ];
+        }
+
+        return ['allowed' => true, 'reason' => ''];
     }
 
     private function _buildReadableReplyFromStructured($structured, $fallbackText, $discoveryMode = false)
