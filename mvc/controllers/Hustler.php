@@ -223,71 +223,82 @@ class Hustler extends MY_Controller
 
     public function generate_market_access()
     {
-        $investor = $this->_requireAuth(true);
+        try {
+            $investor = $this->_requireAuth(true);
 
-        if (!$this->_tablesInstalled()) {
-            $this->_json(['ok' => false, 'error' => 'Hustler tables are not installed yet.']);
-            return;
-        }
+            if (!$this->_tablesInstalled()) {
+                $this->_json(['ok' => false, 'error' => 'Hustler tables are not installed yet.']);
+                return;
+            }
 
-        $profile = $this->_ensureProfile($investor->hustler_investor_id);
-        $apiKey = $this->_getOpenAIKey();
-        if ($apiKey === '') {
-            $this->_json(['ok' => false, 'error' => 'OpenAI API key is not configured.']);
-            return;
-        }
+            $profile = $this->_ensureProfile($investor->hustler_investor_id);
+            $apiKey = $this->_getOpenAIKey();
+            if ($apiKey === '') {
+                $this->_json(['ok' => false, 'error' => 'OpenAI API key is not configured.']);
+                return;
+            }
 
-        $focus = trim((string) $this->input->post('focus'));
-        $settings = $this->hatcher_ai_settings_m->get_latest_settings();
+            $focus = trim((string) $this->input->post('focus'));
+            $settings = $this->hatcher_ai_settings_m->get_latest_settings();
+            $postCount = $this->_extractRequestedPostCount($focus, 30);
 
-        $payload = [
-            'model' => customCompute($settings) ? $settings->model : 'gpt-4o-mini',
-            'input' => [
-                [
-                    'role' => 'user',
-                    'content' => $this->_buildMarketAccessPrompt($profile, $focus)
+            $payload = [
+                'model' => customCompute($settings) ? $settings->model : 'gpt-4o-mini',
+                'input' => [
+                    [
+                        'role' => 'user',
+                        'content' => $this->_buildMarketAccessPrompt($profile, $focus, $postCount)
+                    ]
+                ],
+                'instructions' => 'You create market-entry research packs for founders. Use founder context and inferred competitor intelligence. Return JSON only.',
+                'max_output_tokens' => 2200,
+                'temperature' => 0.5
+            ];
+
+            $response = $this->_callOpenAI($apiKey, $payload);
+            if (!$response['ok']) {
+                $this->_json(['ok' => false, 'error' => $this->_friendlyOpenAIError($response['error'])]);
+                return;
+            }
+
+            $responseText = $this->_extractResponseText($response['data']);
+            $structured = $this->_decodeStructuredResponse($responseText);
+            if (!is_array($structured) || empty($structured)) {
+                $structured = $this->_repairMarketAccessJson($apiKey, $responseText, customCompute($settings) ? $settings->model : 'gpt-4o-mini');
+            }
+            if (!is_array($structured) || empty($structured)) {
+                $this->_json(['ok' => false, 'error' => 'Could not generate market access assets from AI output.']);
+                return;
+            }
+
+            $assetData = [
+                'market_overview' => $this->_stringOrFallback($structured, 'market_overview'),
+                'ideal_customer_profile' => $this->_stringOrFallback($structured, 'ideal_customer_profile'),
+                'competitor_patterns_json' => json_encode($this->_normalizeList(isset($structured['competitor_patterns']) ? $structured['competitor_patterns'] : [])),
+                'distribution_angles_json' => json_encode($this->_normalizeList(isset($structured['distribution_angles']) ? $structured['distribution_angles'] : [])),
+                'social_posts_json' => json_encode($this->_normalizeList(isset($structured['social_posts']) ? $structured['social_posts'] : [], $postCount)),
+                'updated_at' => date('Y-m-d H:i:s')
+            ];
+
+            $this->hustler_market_asset_m->upsert_for_profile($profile->hustler_founder_profile_id, $assetData);
+
+            $this->_json([
+                'ok' => true,
+                'market_asset' => [
+                    'market_overview' => $assetData['market_overview'],
+                    'ideal_customer_profile' => $assetData['ideal_customer_profile'],
+                    'competitor_patterns' => json_decode($assetData['competitor_patterns_json'], true),
+                    'distribution_angles' => json_decode($assetData['distribution_angles_json'], true),
+                    'social_posts' => json_decode($assetData['social_posts_json'], true),
+                    'updated_at' => $assetData['updated_at']
                 ]
-            ],
-            'instructions' => 'You create market-entry research packs for founders. Use the founder context and broadly-known market patterns. State assumptions. Return JSON only.',
-            'max_output_tokens' => 1800,
-            'temperature' => 0.5
-        ];
-
-        $response = $this->_callOpenAI($apiKey, $payload);
-        if (!$response['ok']) {
-            $this->_json(['ok' => false, 'error' => $this->_friendlyOpenAIError($response['error'])]);
-            return;
+            ]);
+        } catch (\Throwable $e) {
+            $this->_json([
+                'ok' => false,
+                'error' => 'Market access generation failed. ' . $e->getMessage()
+            ]);
         }
-
-        $responseText = $this->_extractResponseText($response['data']);
-        $structured = $this->_decodeStructuredResponse($responseText);
-        if (!is_array($structured) || empty($structured)) {
-            $this->_json(['ok' => false, 'error' => 'Could not generate market access assets.']);
-            return;
-        }
-
-        $assetData = [
-            'market_overview' => $this->_stringOrFallback($structured, 'market_overview'),
-            'ideal_customer_profile' => $this->_stringOrFallback($structured, 'ideal_customer_profile'),
-            'competitor_patterns_json' => json_encode($this->_normalizeList(isset($structured['competitor_patterns']) ? $structured['competitor_patterns'] : [])),
-            'distribution_angles_json' => json_encode($this->_normalizeList(isset($structured['distribution_angles']) ? $structured['distribution_angles'] : [])),
-            'social_posts_json' => json_encode($this->_normalizeList(isset($structured['social_posts']) ? $structured['social_posts'] : [], 20)),
-            'updated_at' => date('Y-m-d H:i:s')
-        ];
-
-        $this->hustler_market_asset_m->upsert_for_profile($profile->hustler_founder_profile_id, $assetData);
-
-        $this->_json([
-            'ok' => true,
-            'market_asset' => [
-                'market_overview' => $assetData['market_overview'],
-                'ideal_customer_profile' => $assetData['ideal_customer_profile'],
-                'competitor_patterns' => json_decode($assetData['competitor_patterns_json'], true),
-                'distribution_angles' => json_decode($assetData['distribution_angles_json'], true),
-                'social_posts' => json_decode($assetData['social_posts_json'], true),
-                'updated_at' => $assetData['updated_at']
-            ]
-        ]);
     }
 
     public function logout()
@@ -455,7 +466,7 @@ class Hustler extends MY_Controller
             . "\nExisting founder context:\n" . json_encode($context);
     }
 
-    private function _buildMarketAccessPrompt($profile, $focus)
+    private function _buildMarketAccessPrompt($profile, $focus, $postCount = 30)
     {
         $context = [
             'founder_name' => (string) $profile->founder_name,
@@ -468,13 +479,14 @@ class Hustler extends MY_Controller
             'memory_summary' => (string) $profile->memory_summary
         ];
 
-        return "Build a market-access brief for this founder."
-            . "\nUse the founder context below and infer likely competitor patterns from broadly known market behavior."
-            . "\nIf exact competitor names are unknown, say the patterns are inferred."
+        return "Build a market-access brief and social media starter pack for this founder."
+            . "\nUse the founder context below and infer likely competitor patterns from broadly known market behavior and channel norms."
+            . "\nIf exact competitor names are unknown, explicitly mark competitor insights as inferred."
             . "\nReturn JSON only with keys: market_overview, ideal_customer_profile, competitor_patterns, distribution_angles, social_posts."
             . "\ncompetitor_patterns should be an array of short bullets."
             . "\ndistribution_angles should be an array of short bullets."
-            . "\nsocial_posts must contain exactly 20 short post drafts."
+            . "\nsocial_posts must contain exactly " . (int) $postCount . " short post drafts optimized for startup social media execution."
+            . "\nIf the user asks for Instagram, tailor formats to Instagram (hooks, carousel ideas, reel prompts, captions, CTA)."
             . ($focus !== '' ? "\nFocus area: " . $focus : '')
             . "\nFounder context:\n" . json_encode($context);
     }
@@ -729,6 +741,43 @@ class Hustler extends MY_Controller
 
         $text = trim(implode("\n", $lines));
         return $text !== '' ? $text : $fallbackText;
+    }
+
+    private function _extractRequestedPostCount($focus, $default = 30)
+    {
+        $count = (int) $default;
+        if (preg_match('/\b([1-9][0-9]?)\s+(?:social\s+)?posts?\b/i', (string) $focus, $matches)) {
+            $candidate = isset($matches[1]) ? (int) $matches[1] : $count;
+            if ($candidate >= 10 && $candidate <= 40) {
+                $count = $candidate;
+            }
+        }
+
+        return $count;
+    }
+
+    private function _repairMarketAccessJson($apiKey, $rawText, $model)
+    {
+        $payload = [
+            'model' => $model,
+            'input' => [
+                [
+                    'role' => 'user',
+                    'content' => "Convert this content into strict JSON with keys: market_overview, ideal_customer_profile, competitor_patterns, distribution_angles, social_posts. Do not add any explanation.\n\nContent:\n" . (string) $rawText
+                ]
+            ],
+            'instructions' => 'Output JSON only.',
+            'max_output_tokens' => 1600,
+            'temperature' => 0.2
+        ];
+
+        $response = $this->_callOpenAI($apiKey, $payload);
+        if (!$response['ok']) {
+            return [];
+        }
+
+        $text = $this->_extractResponseText($response['data']);
+        return $this->_decodeStructuredResponse($text);
     }
 
     private function _getOpenAIKey()

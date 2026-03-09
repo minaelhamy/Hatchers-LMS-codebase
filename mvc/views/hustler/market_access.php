@@ -33,7 +33,7 @@
             <div>
                 <div class="hustler-eyebrow">Market Access Tool</div>
                 <h1>Research + content starter pack</h1>
-                <p>Generate a market read, inferred competitor patterns, distribution angles, and 20 starter social posts from the founder context already captured.</p>
+                <p>Generate a market read, inferred competitor patterns, distribution angles, and social starter posts from the founder context already captured.</p>
             </div>
         </section>
 
@@ -92,7 +92,7 @@
         </section>
 
         <section class="hustler-right-card">
-            <div class="hustler-right-title">20 Social Posts</div>
+            <div class="hustler-right-title">Social Posts</div>
             <div class="hustler-plain-list social" id="hustler-post-list">
                 <?php if (customCompute($posts)) { ?>
                     <?php foreach ($posts as $post) { ?>
@@ -135,8 +135,14 @@
                 renderList('#hustler-competitor-list', res.market_asset.competitor_patterns || [], 'No competitor signal set yet.');
                 renderList('#hustler-angle-list', res.market_asset.distribution_angles || [], 'No distribution angles generated yet.');
                 renderList('#hustler-post-list', res.market_asset.social_posts || [], 'No social content generated yet.');
-            }, 'json').fail(function() {
-                alert('Request failed. Please try again.');
+            }, 'json').fail(function(xhr) {
+                var serverMessage = 'Request failed. Please try again.';
+                if (xhr && xhr.responseJSON && xhr.responseJSON.error) {
+                    serverMessage = xhr.responseJSON.error;
+                } else if (xhr && xhr.responseText) {
+                    serverMessage = xhr.responseText.substring(0, 220);
+                }
+                alert(serverMessage);
             }).always(function() {
                 $button.prop('disabled', false).text('Generate');
             });
