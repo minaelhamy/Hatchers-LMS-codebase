@@ -2,9 +2,11 @@
     $competitors = customCompute($market_asset) ? json_decode((string) $market_asset->competitor_patterns_json, true) : [];
     $angles = customCompute($market_asset) ? json_decode((string) $market_asset->distribution_angles_json, true) : [];
     $posts = customCompute($market_asset) ? json_decode((string) $market_asset->social_posts_json, true) : [];
+    $postImages = customCompute($market_asset) ? json_decode((string) $market_asset->post_images_json, true) : [];
     if (!is_array($competitors)) $competitors = [];
     if (!is_array($angles)) $angles = [];
     if (!is_array($posts)) $posts = [];
+    if (!is_array($postImages)) $postImages = [];
 ?>
 <div class="hustler-app single-page">
     <aside class="hustler-sidebar">
@@ -59,6 +61,22 @@
                 <div class="hustler-right-card tall">
                     <div class="hustler-right-title">Ideal Customer Profile</div>
                     <div id="hustler-icp"><?=htmlspecialchars(customCompute($market_asset) ? (string) $market_asset->ideal_customer_profile : 'No ICP generated yet.')?></div>
+                </div>
+            </div>
+
+            <div class="hustler-right-card">
+                <div class="hustler-right-title">Generated Post Images</div>
+                <div class="hustler-image-grid" id="hustler-image-grid">
+                    <?php if (customCompute($postImages)) { ?>
+                        <?php foreach ($postImages as $imageItem) { ?>
+                            <div class="hustler-image-card">
+                                <img src="<?=htmlspecialchars(isset($imageItem['image_url']) ? (string) $imageItem['image_url'] : '')?>" alt="">
+                                <div class="hustler-image-caption"><?=htmlspecialchars(isset($imageItem['caption']) ? (string) $imageItem['caption'] : '')?></div>
+                            </div>
+                        <?php } ?>
+                    <?php } else { ?>
+                        <div class="hustler-empty-image-grid">Generated images will appear here after you run Market Access.</div>
+                    <?php } ?>
                 </div>
             </div>
         </section>
@@ -119,6 +137,21 @@
             }).join(''));
         }
 
+        function renderImageGrid(images) {
+            images = images || [];
+            var html = '';
+            if (!images.length) {
+                html = '<div class="hustler-empty-image-grid">Generated images will appear here after you run Market Access.</div>';
+            } else {
+                html = images.map(function(item) {
+                    var url = item && item.image_url ? item.image_url : '';
+                    var caption = item && item.caption ? item.caption : '';
+                    return '<div class="hustler-image-card"><img src="' + escapeHtml(url) + '" alt=""><div class="hustler-image-caption">' + escapeHtml(caption) + '</div></div>';
+                }).join('');
+            }
+            $('#hustler-image-grid').html(html);
+        }
+
         $('#hustler-market-generate').on('click', function() {
             var focus = ($('#hustler-market-focus').val() || '').trim();
             var $button = $(this);
@@ -135,6 +168,7 @@
                 renderList('#hustler-competitor-list', res.market_asset.competitor_patterns || [], 'No competitor signal set yet.');
                 renderList('#hustler-angle-list', res.market_asset.distribution_angles || [], 'No distribution angles generated yet.');
                 renderList('#hustler-post-list', res.market_asset.social_posts || [], 'No social content generated yet.');
+                renderImageGrid(res.market_asset.post_images || []);
             }, 'json').fail(function(xhr) {
                 var serverMessage = 'Request failed. Please try again.';
                 if (xhr && xhr.responseJSON && xhr.responseJSON.error) {

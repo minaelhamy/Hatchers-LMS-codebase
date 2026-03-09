@@ -271,12 +271,28 @@ class Hustler extends MY_Controller
                 return;
             }
 
+            $socialPosts = $this->_extractSocialPosts($structured, $postCount);
+            $postImages = $this->_generateSocialPostImages($apiKey, $socialPosts, $profile, 9);
+
+            $marketOverview = $this->_textFieldOrFallback($structured, 'market_overview');
+            if ($marketOverview === '') {
+                $marketOverview = 'Market overview pending. Add more founder context in Weekly Plan chat to generate a sharper market read.';
+            }
+
+            $icp = $this->_textFieldOrFallback($structured, 'ideal_customer_profile');
+            if ($icp === '') {
+                $icp = 'Ideal customer profile pending. Share clearer ICP clues (buyer type, geography, channel) and regenerate.';
+            }
+
             $assetData = [
-                'market_overview' => $this->_textFieldOrFallback($structured, 'market_overview'),
-                'ideal_customer_profile' => $this->_textFieldOrFallback($structured, 'ideal_customer_profile'),
+                'market_overview' => $marketOverview,
+                'ideal_customer_profile' => $icp,
                 'competitor_patterns_json' => json_encode($this->_normalizeList(isset($structured['competitor_patterns']) ? $structured['competitor_patterns'] : [])),
                 'distribution_angles_json' => json_encode($this->_normalizeList(isset($structured['distribution_angles']) ? $structured['distribution_angles'] : [])),
-                'social_posts_json' => json_encode($this->_normalizeList(isset($structured['social_posts']) ? $structured['social_posts'] : [], $postCount)),
+                'social_posts_json' => json_encode(array_map(function ($row) {
+                    return isset($row['caption']) ? $row['caption'] : '';
+                }, $socialPosts)),
+                'post_images_json' => json_encode($postImages),
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 
@@ -290,6 +306,7 @@ class Hustler extends MY_Controller
                     'competitor_patterns' => json_decode($assetData['competitor_patterns_json'], true),
                     'distribution_angles' => json_decode($assetData['distribution_angles_json'], true),
                     'social_posts' => json_decode($assetData['social_posts_json'], true),
+                    'post_images' => json_decode($assetData['post_images_json'], true),
                     'updated_at' => $assetData['updated_at']
                 ]
             ]);
@@ -485,7 +502,8 @@ class Hustler extends MY_Controller
             . "\nReturn JSON only with keys: market_overview, ideal_customer_profile, competitor_patterns, distribution_angles, social_posts."
             . "\ncompetitor_patterns should be an array of short bullets."
             . "\ndistribution_angles should be an array of short bullets."
-            . "\nsocial_posts must contain exactly " . (int) $postCount . " short post drafts optimized for startup social media execution."
+            . "\nsocial_posts must contain exactly " . (int) $postCount . " items."
+            . "\nEach item can be either a string caption OR an object with keys caption and image_prompt."
             . "\nIf the user asks for Instagram, tailor formats to Instagram (hooks, carousel ideas, reel prompts, captions, CTA)."
             . ($focus !== '' ? "\nFocus area: " . $focus : '')
             . "\nFounder context:\n" . json_encode($context);
@@ -763,7 +781,7 @@ class Hustler extends MY_Controller
             'input' => [
                 [
                     'role' => 'user',
-                    'content' => "Convert this content into strict JSON with keys: market_overview, ideal_customer_profile, competitor_patterns, distribution_angles, social_posts. Do not add any explanation.\n\nContent:\n" . (string) $rawText
+                    'content' => "Convert this content into strict JSON with keys: market_overview, ideal_customer_profile, competitor_patterns, distribution_angles, social_posts. social_posts can be strings or objects with caption and image_prompt. Do not add any explanation.\n\nContent:\n" . (string) $rawText
                 ]
             ],
             'instructions' => 'Output JSON only.',
@@ -969,6 +987,149 @@ class Hustler extends MY_Controller
         }
 
         return trim((string) $value);
+    }
+
+    private function _extractSocialPosts($structured, $limit = 30)
+    {
+        $posts = [];
+        $rows = isset($structured['social_posts']) && is_array($structured['social_posts']) ? $structured['social_posts'] : [];
+
+        foreach ($rows as $row) {
+            if (count($posts) >= $limit) {
+                break;
+            }
+
+            if (is_array($row)) {
+                $caption = isset($row['caption']) ? trim((string) $row['caption']) : '';
+                $prompt = isset($row['image_prompt']) ? trim((string) $row['image_prompt']) : '';
+                if ($caption === '') {
+                    $caption = isset($row['text']) ? trim((string) $row['text']) : '';
+                }
+                if ($prompt === '') {
+                    $prompt = 'Create a clean social media post visual for: ' . $caption;
+                }
+            } else {
+                $caption = trim((string) $row);
+                $prompt = 'Create a clean social media post visual for: ' . $caption;
+            }
+
+            if ($caption === '') {
+                continue;
+            }
+
+            $posts[] = [
+                'caption' => $caption,
+                'image_prompt' => $prompt
+            ];
+        }
+
+        return $posts;
+    }
+
+    private function _generateSocialPostImages($apiKey, $socialPosts, $profile, $limit = 9)
+    {
+        $images = [];
+        $count = 0;
+        foreach ($socialPosts as $post) {
+            if ($count >= $limit) {
+                break;
+            }
+
+            $prompt = isset($post['image_prompt']) ? (string) $post['image_prompt'] : '';
+            $caption = isset($post['caption']) ? (string) $post['caption'] : '';
+            if (trim($prompt) === '') {
+                $prompt = 'Create a startup social media visual. Caption context: ' . $caption;
+            }
+
+            $fullPrompt = "Create a high-quality square social media image."
+                . " Brand context: " . (string) $profile->company_name
+                . ". Founder idea context: " . (string) $profile->idea_summary
+                . ". Image brief: " . $prompt
+                . ". Do not include excessive text in the image.";
+
+            $result = $this->_callOpenAIImage($apiKey, $fullPrompt);
+            if (!$result['ok']) {
+                continue;
+            }
+
+            $filename = $this->_storeGeneratedImage($result['b64'], $profile->hustler_founder_profile_id, $count + 1);
+            if ($filename === '') {
+                continue;
+            }
+
+            $images[] = [
+                'caption' => $caption,
+                'image_url' => base_url('uploads/hustler_posts/' . $filename)
+            ];
+            $count++;
+        }
+
+        return $images;
+    }
+
+    private function _callOpenAIImage($apiKey, $prompt)
+    {
+        $payload = [
+            'model' => 'gpt-image-1',
+            'prompt' => $prompt,
+            'size' => '1024x1024'
+        ];
+
+        $ch = curl_init('https://api.openai.com/v1/images/generations');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Authorization: Bearer ' . $apiKey
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+
+        $result = curl_exec($ch);
+        if ($result === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            return ['ok' => false, 'error' => $error];
+        }
+
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        $data = json_decode($result, true);
+
+        if ($status >= 400 || !is_array($data)) {
+            return ['ok' => false, 'error' => 'Image generation failed.'];
+        }
+
+        if (!isset($data['data'][0]['b64_json'])) {
+            return ['ok' => false, 'error' => 'No image payload returned.'];
+        }
+
+        return ['ok' => true, 'b64' => $data['data'][0]['b64_json']];
+    }
+
+    private function _storeGeneratedImage($b64, $profileID, $index)
+    {
+        $dir = FCPATH . 'uploads/hustler_posts/';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+
+        if (!is_dir($dir) || !is_writable($dir)) {
+            return '';
+        }
+
+        $binary = base64_decode((string) $b64);
+        if ($binary === false) {
+            return '';
+        }
+
+        $filename = 'profile_' . (int) $profileID . '_' . date('YmdHis') . '_' . (int) $index . '.png';
+        $saved = @file_put_contents($dir . $filename, $binary);
+        if ($saved === false) {
+            return '';
+        }
+
+        @chmod($dir . $filename, 0644);
+        return $filename;
     }
 
     private function _hash($string)

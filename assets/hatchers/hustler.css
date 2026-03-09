@@ -454,6 +454,41 @@
     align-content: start;
 }
 
+.hustler-image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.hustler-image-card {
+    border: 1px solid #ece3d8;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.hustler-image-card img {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    display: block;
+}
+
+.hustler-image-caption {
+    padding: 10px;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #52473f;
+}
+
+.hustler-empty-image-grid {
+    border: 1px dashed #e4d7c8;
+    border-radius: 12px;
+    padding: 14px;
+    color: #7f7368;
+    font-size: 13px;
+}
+
 .hustler-app.chat-first .hustler-main {
     max-width: 900px;
     margin: 0 auto;
@@ -544,7 +579,8 @@
     }
 
     .hustler-diagnosis-grid,
-    .hustler-market-grid {
+    .hustler-market-grid,
+    .hustler-image-grid {
         grid-template-columns: 1fr;
     }
 

@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS hustler_market_assets (
     competitor_patterns_json LONGTEXT NULL,
     distribution_angles_json LONGTEXT NULL,
     social_posts_json LONGTEXT NULL,
+    post_images_json LONGTEXT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NULL,
     PRIMARY KEY (hustler_market_asset_id),
