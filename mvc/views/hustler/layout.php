@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="<?=base_url('assets/hatchers/hustler.css')?>">
 </head>
 <body class="hustler-shell">
-    <?php $this->load->view($subview); ?>
     <script src="<?=base_url('assets/inilabs/jquery.min.js')?>"></script>
+    <?php $this->load->view($subview); ?>
 </body>
 </html>
