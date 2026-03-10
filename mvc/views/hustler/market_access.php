@@ -19,6 +19,10 @@
     $igWebsite = isset($instagramProfile['website']) ? (string) $instagramProfile['website'] : 'https://hatchers.ai';
     $igFollowers = isset($instagramProfile['followers']) ? (int) $instagramProfile['followers'] : 0;
     $igFollowing = isset($instagramProfile['following']) ? (int) $instagramProfile['following'] : 0;
+    $igLogo = isset($instagramProfile['logo_url']) ? trim((string) $instagramProfile['logo_url']) : '';
+    if ($igLogo === '') {
+        $igLogo = isset($profile->company_logo_url) ? trim((string) $profile->company_logo_url) : '';
+    }
 ?>
 <div class="hustler-app single-page market-redesign">
     <aside class="hustler-sidebar">
@@ -85,7 +89,9 @@
                 </div>
                 <div class="hustler-instagram-profile">
                     <div class="hustler-instagram-avatar">
-                        <?php if (customCompute($postImages)) { ?>
+                        <?php if ($igLogo !== '') { ?>
+                            <img id="ig-avatar-img" src="<?=htmlspecialchars($igLogo)?>" alt="">
+                        <?php } elseif (customCompute($postImages)) { ?>
                             <img id="ig-avatar-img" src="<?=htmlspecialchars((string) $postImages[0]['image_url'])?>" alt="">
                         <?php } else { ?>
                             <span id="ig-avatar-fallback"><?=htmlspecialchars(substr($igDisplayName, 0, 2))?></span>
@@ -199,7 +205,7 @@
             }).join(''));
         }
 
-        function renderImageGrid(images) {
+        function renderImageGrid(images, logoUrl) {
             images = images || [];
             var html = '';
             if (!images.length) {
@@ -212,7 +218,9 @@
             }
             $('#hustler-image-grid').html(html);
             $('#ig-post-count').text(images.length || 6);
-            if (images.length && images[0].image_url) {
+            if (logoUrl) {
+                $('.hustler-instagram-avatar').html('<img id="ig-avatar-img" src="' + escapeHtml(logoUrl) + '" alt="">');
+            } else if (images.length && images[0].image_url) {
                 $('.hustler-instagram-avatar').html('<img id="ig-avatar-img" src="' + escapeHtml(images[0].image_url) + '" alt="">');
             }
         }
@@ -276,7 +284,10 @@
                 renderList('#hustler-competitor-list', res.market_asset.competitor_patterns || [], 'No competitor signal set yet.');
                 renderList('#hustler-angle-list', res.market_asset.distribution_angles || [], 'No distribution angles generated yet.');
                 renderList('#hustler-post-list', res.market_asset.social_posts || [], 'No social content generated yet.');
-                renderImageGrid(res.market_asset.post_images || []);
+                var logoUrl = res.market_asset.instagram_profile && res.market_asset.instagram_profile.logo_url
+                    ? res.market_asset.instagram_profile.logo_url
+                    : '';
+                renderImageGrid(res.market_asset.post_images || [], logoUrl);
                 renderFunnels(res.market_asset.funnel_suggestions || []);
             }, 'json').fail(function(xhr) {
                 var serverMessage = 'Request failed. Please try again.';

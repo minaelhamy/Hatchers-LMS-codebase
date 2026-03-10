@@ -26,4 +26,5 @@
     $route['hustler/market-access'] = 'hustler/market_access';
     $route['hustler/generate-market-access'] = 'hustler/generate_market_access';
     $route['hustler/restart-profile'] = 'hustler/restart_profile';
+    $route['hustler/upload-media'] = 'hustler/upload_media';
     $route['hustler/logout'] = 'hustler/logout';

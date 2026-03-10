@@ -221,7 +221,7 @@ class Hustler extends MY_Controller
         }
         $marketGate = $this->_marketAccessGate($profile);
         if ($marketGate['allowed']) {
-            $assistantReply .= "\n\nYou now have enough progress to open Market Access from the left menu.";
+            $assistantReply .= "\n\nYou now have enough context to proceed. Click Market Access in the left menu to review generated Instagram and funnel assets.";
         }
 
         $this->_json([
@@ -231,7 +231,8 @@ class Hustler extends MY_Controller
             'diagnosis' => $this->_decodeJsonField($profile->last_diagnosis_json),
             'profile' => $this->_profileViewData($profile),
             'ready_for_diagnosis' => $readyForDiagnosis,
-            'market_access_allowed' => $marketGate['allowed']
+            'market_access_allowed' => $marketGate['allowed'],
+            'market_access_reason' => $marketGate['reason']
         ]);
     }
 
@@ -372,8 +373,10 @@ class Hustler extends MY_Controller
             'founder_name' => '',
             'founder_email' => '',
             'profile_photo_url' => '',
+            'company_logo_url' => '',
             'company_name' => '',
             'idea_summary' => '',
+            'target_customer_profile' => '',
             'stage_label' => 'Needs diagnosis',
             'skills_summary' => '',
             'weekly_time_commitment' => '',
@@ -388,6 +391,39 @@ class Hustler extends MY_Controller
         ]);
 
         $this->session->set_flashdata('hustler_market_gate_error', 'Profile restarted. You can start from scratch with a new idea.');
+        redirect(base_url('hustler/dashboard'));
+    }
+
+    public function upload_media()
+    {
+        $investor = $this->_requireAuth();
+        if ($this->input->method(true) !== 'POST') {
+            redirect(base_url('hustler/dashboard'));
+            return;
+        }
+
+        $profile = $this->_ensureProfile($investor->hustler_investor_id);
+        $mediaType = trim((string) $this->input->post('media_type'));
+        if (!isset($_FILES['media_file']) || !is_array($_FILES['media_file'])) {
+            $this->session->set_flashdata('hustler_market_gate_error', 'No file selected.');
+            redirect(base_url('hustler/dashboard'));
+            return;
+        }
+
+        $filePath = $this->_storeProfileMediaFile($_FILES['media_file'], $profile->hustler_founder_profile_id, $mediaType);
+        if ($filePath === '') {
+            $this->session->set_flashdata('hustler_market_gate_error', 'Upload failed. Please use JPG, PNG, or WEBP under 5MB.');
+            redirect(base_url('hustler/dashboard'));
+            return;
+        }
+
+        $field = $mediaType === 'company_logo' ? 'company_logo_url' : 'profile_photo_url';
+        $this->hustler_profile_m->upsert_profile($investor->hustler_investor_id, [
+            $field => $filePath,
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        $this->session->set_flashdata('hustler_market_gate_error', ucfirst(str_replace('_', ' ', $mediaType)) . ' uploaded.');
         redirect(base_url('hustler/dashboard'));
     }
 
@@ -469,8 +505,10 @@ class Hustler extends MY_Controller
             'founder_name' => '',
             'founder_email' => '',
             'profile_photo_url' => '',
+            'company_logo_url' => '',
             'company_name' => '',
             'idea_summary' => '',
+            'target_customer_profile' => '',
             'stage_label' => 'Needs diagnosis',
             'skills_summary' => '',
             'weekly_time_commitment' => '',
@@ -493,8 +531,10 @@ class Hustler extends MY_Controller
             'founder_name' => (string) $profile->founder_name,
             'founder_email' => (string) $profile->founder_email,
             'profile_photo_url' => isset($profile->profile_photo_url) ? (string) $profile->profile_photo_url : '',
+            'company_logo_url' => isset($profile->company_logo_url) ? (string) $profile->company_logo_url : '',
             'company_name' => (string) $profile->company_name,
             'idea_summary' => (string) $profile->idea_summary,
+            'target_customer_profile' => isset($profile->target_customer_profile) ? (string) $profile->target_customer_profile : '',
             'stage_label' => (string) $profile->stage_label,
             'skills_summary' => (string) $profile->skills_summary,
             'weekly_time_commitment' => (string) $profile->weekly_time_commitment,
@@ -510,11 +550,14 @@ class Hustler extends MY_Controller
                 . "\nYou are in discovery mode. Do NOT generate final diagnosis, weekly plans, or milestone/task outputs yet."
                 . "\nGoal: ask sharp follow-up questions, one or two at a time, to understand founder context deeply."
                 . "\nBe conversational and natural, like a strong ChatGPT-style coach."
-                . "\nCollect: founder background, exact idea, ICP, current traction, available weekly time, available capital, distribution access, and biggest constraints."
+                . "\nCollect the following as top priority: founder_name, company_name, company_logo_url (or ask them to upload), idea_summary, target_customer_profile."
+                . "\nIf these core fields are clear, set ready_for_diagnosis=true and switch to full diagnosis + weekly plan immediately."
+                . "\nWhen you set ready_for_diagnosis=true, explicitly tell the founder they can click Market Access."
+                . "\nThen continue with ICP depth, traction, available time, available capital, distribution access, and biggest constraints."
                 . "\nReturn JSON only with keys:"
                 . "\nassistant_reply (string),"
                 . "\nready_for_diagnosis (boolean, keep false unless enough context for a solid diagnosis),"
-                . "\nfounder_profile (object with founder_name, founder_email, profile_photo_url, company_name, idea_summary, stage_label, skills_summary, weekly_time_commitment, capital_available, traction_summary, constraints_summary, competitor_notes),"
+                . "\nfounder_profile (object with founder_name, founder_email, profile_photo_url, company_logo_url, company_name, idea_summary, target_customer_profile, stage_label, skills_summary, weekly_time_commitment, capital_available, traction_summary, constraints_summary, competitor_notes),"
                 . "\nmemory_summary (string)."
                 . "\nCurrent user message count: " . (int) $userMessageCount
                 . "\nExisting founder context:\n" . json_encode($context);
@@ -531,7 +574,7 @@ class Hustler extends MY_Controller
             . "\nReturn JSON only with keys:"
             . "\nassistant_reply (string for the user-facing message),"
             . "\nready_for_diagnosis (boolean, true),"
-            . "\nfounder_profile (object with founder_name, founder_email, profile_photo_url, company_name, idea_summary, stage_label, skills_summary, weekly_time_commitment, capital_available, traction_summary, constraints_summary, competitor_notes),"
+            . "\nfounder_profile (object with founder_name, founder_email, profile_photo_url, company_logo_url, company_name, idea_summary, target_customer_profile, stage_label, skills_summary, weekly_time_commitment, capital_available, traction_summary, constraints_summary, competitor_notes),"
             . "\ndiagnosis (object with current_status, founder_idea_fit, dfv_assessment, bottleneck_identification),"
             . "\ngaps (array of short strings covering access, clarity, distribution, unit economics, execution as applicable),"
             . "\npriority_actions (array with 1 to 3 concise action steps),"
@@ -549,7 +592,9 @@ class Hustler extends MY_Controller
         $context = [
             'founder_name' => (string) $profile->founder_name,
             'company_name' => (string) $profile->company_name,
+            'company_logo_url' => isset($profile->company_logo_url) ? (string) $profile->company_logo_url : '',
             'idea_summary' => (string) $profile->idea_summary,
+            'target_customer_profile' => isset($profile->target_customer_profile) ? (string) $profile->target_customer_profile : '',
             'stage_label' => (string) $profile->stage_label,
             'traction_summary' => (string) $profile->traction_summary,
             'constraints_summary' => (string) $profile->constraints_summary,
@@ -561,7 +606,7 @@ class Hustler extends MY_Controller
             . "\nUse the founder context below and infer likely competitor patterns from broadly known market behavior and channel norms."
             . "\nIf exact competitor names are unknown, explicitly mark competitor insights as inferred."
             . "\nReturn JSON only with keys: market_overview, ideal_customer_profile, instagram_profile, competitor_patterns, distribution_angles, social_posts, funnel_suggestions."
-            . "\ninstagram_profile object keys: username, display_name, bio, website, followers, following."
+            . "\ninstagram_profile object keys: username, display_name, bio, website, followers, following, logo_url."
             . "\ncompetitor_patterns should be an array of short bullets."
             . "\ndistribution_angles should be an array of short bullets."
             . "\nsocial_posts must contain exactly " . (int) $postCount . " items."
@@ -610,8 +655,10 @@ class Hustler extends MY_Controller
             'founder_name' => $this->_stringFromArray($founderProfile, 'founder_name', $profile->founder_name),
             'founder_email' => $this->_stringFromArray($founderProfile, 'founder_email', $profile->founder_email),
             'profile_photo_url' => $this->_stringFromArray($founderProfile, 'profile_photo_url', isset($profile->profile_photo_url) ? $profile->profile_photo_url : ''),
+            'company_logo_url' => $this->_stringFromArray($founderProfile, 'company_logo_url', isset($profile->company_logo_url) ? $profile->company_logo_url : ''),
             'company_name' => $this->_stringFromArray($founderProfile, 'company_name', $profile->company_name),
             'idea_summary' => $this->_stringFromArray($founderProfile, 'idea_summary', $profile->idea_summary),
+            'target_customer_profile' => $this->_extractTargetCustomerProfile($founderProfile, $structured, isset($profile->target_customer_profile) ? $profile->target_customer_profile : ''),
             'stage_label' => $this->_stringFromArray($founderProfile, 'stage_label', $profile->stage_label),
             'skills_summary' => $this->_stringFromArray($founderProfile, 'skills_summary', $profile->skills_summary),
             'weekly_time_commitment' => $this->_stringFromArray($founderProfile, 'weekly_time_commitment', $profile->weekly_time_commitment),
@@ -735,7 +782,9 @@ class Hustler extends MY_Controller
         return [
             'founder_name' => (string) $profile->founder_name,
             'profile_photo_url' => isset($profile->profile_photo_url) ? (string) $profile->profile_photo_url : '',
+            'company_logo_url' => isset($profile->company_logo_url) ? (string) $profile->company_logo_url : '',
             'company_name' => (string) $profile->company_name,
+            'target_customer_profile' => isset($profile->target_customer_profile) ? (string) $profile->target_customer_profile : '',
             'stage_label' => (string) $profile->stage_label,
             'idea_summary' => (string) $profile->idea_summary
         ];
@@ -750,16 +799,13 @@ class Hustler extends MY_Controller
 
     private function _shouldUseDiscoveryMode($profile, $userMessageCount)
     {
-        if ($userMessageCount < 3) {
-            return true;
-        }
-
+        $founderName = trim((string) $profile->founder_name);
+        $company = trim((string) $profile->company_name);
+        $logo = trim((string) $profile->company_logo_url);
         $idea = trim((string) $profile->idea_summary);
-        $time = trim((string) $profile->weekly_time_commitment);
-        $capital = trim((string) $profile->capital_available);
-        $traction = trim((string) $profile->traction_summary);
+        $icp = trim((string) $profile->target_customer_profile);
 
-        return ($idea === '' || $time === '' || $capital === '' || $traction === '');
+        return ($founderName === '' || $company === '' || $logo === '' || $idea === '' || $icp === '');
     }
 
     private function _getCurrentActionItems($profileID)
@@ -782,41 +828,46 @@ class Hustler extends MY_Controller
 
     private function _marketAccessGate($profile)
     {
-        $userMessageCount = $this->_countUserMessages((int) $profile->hustler_founder_profile_id);
-        if ($userMessageCount < 5) {
+        $messageCount = (int) $this->db->where('hustler_founder_profile_id', (int) $profile->hustler_founder_profile_id)
+            ->count_all_results('hustler_conversations');
+
+        $founderName = trim((string) $profile->founder_name);
+        $companyName = trim((string) $profile->company_name);
+        $companyLogo = trim((string) $profile->company_logo_url);
+        $ideaSummary = trim((string) $profile->idea_summary);
+        $targetCustomer = trim((string) $profile->target_customer_profile);
+
+        $hasCoreInfo = ($founderName !== '' && $companyName !== '' && $companyLogo !== '' && $ideaSummary !== '' && $targetCustomer !== '');
+        if (!$hasCoreInfo && $messageCount < 5) {
             return [
                 'allowed' => false,
-                'reason' => 'Market Access unlocks after at least 5 chat exchanges with AI Mentor.'
-            ];
-        }
-
-        $required = [
-            'idea_summary' => trim((string) $profile->idea_summary),
-            'weekly_time_commitment' => trim((string) $profile->weekly_time_commitment),
-            'capital_available' => trim((string) $profile->capital_available),
-            'traction_summary' => trim((string) $profile->traction_summary)
-        ];
-
-        foreach ($required as $value) {
-            if ($value === '') {
-                return [
-                    'allowed' => false,
-                    'reason' => 'Market Access is locked until founder context is complete and a weekly plan is generated.'
-                ];
-            }
-        }
-
-        $plan = $this->_decodeJsonField($profile->last_plan_json);
-        $hasTasks = isset($plan['tasks']) && is_array($plan['tasks']) && customCompute($plan['tasks']);
-        $hasMilestones = isset($plan['milestones']) && is_array($plan['milestones']) && customCompute($plan['milestones']);
-        if (!$hasTasks && !$hasMilestones) {
-            return [
-                'allowed' => false,
-                'reason' => 'Market Access is locked until AI Mentor generates your weekly tasks and milestones.'
+                'reason' => 'Market Access unlocks after 5 chat messages or once founder name, company name, company logo, idea, and target customer profile are captured.'
             ];
         }
 
         return ['allowed' => true, 'reason' => ''];
+    }
+
+    private function _extractTargetCustomerProfile($founderProfile, $structured, $currentValue = '')
+    {
+        $candidates = [
+            $this->_stringFromArray($founderProfile, 'target_customer_profile', ''),
+            $this->_stringFromArray($founderProfile, 'ideal_customer_profile', ''),
+            $this->_stringFromArray($founderProfile, 'icp', ''),
+            $this->_stringFromArray(is_array($structured) ? $structured : [], 'target_customer_profile', ''),
+            $this->_stringFromArray(is_array($structured) ? $structured : [], 'ideal_customer_profile', ''),
+            $this->_stringFromArray(is_array($structured) ? $structured : [], 'icp', ''),
+            (string) $currentValue
+        ];
+
+        foreach ($candidates as $candidate) {
+            $candidate = trim((string) $candidate);
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        return '';
     }
 
     private function _buildReadableReplyFromStructured($structured, $fallbackText, $discoveryMode = false)
@@ -1171,6 +1222,10 @@ class Hustler extends MY_Controller
         $website = isset($data['website']) ? trim((string) $data['website']) : 'https://hatchers.ai';
         $followers = isset($data['followers']) ? (int) $data['followers'] : (1200 + (customCompute($socialPosts) * 50));
         $following = isset($data['following']) ? (int) $data['following'] : 30;
+        $logo = isset($data['logo_url']) ? trim((string) $data['logo_url']) : '';
+        if ($logo === '') {
+            $logo = isset($profile->company_logo_url) ? trim((string) $profile->company_logo_url) : '';
+        }
 
         return [
             'username' => $username,
@@ -1179,6 +1234,7 @@ class Hustler extends MY_Controller
             'website' => $website,
             'followers' => $followers,
             'following' => $following,
+            'logo_url' => $logo,
             'posts' => customCompute($socialPosts)
         ];
     }
@@ -1274,6 +1330,7 @@ class Hustler extends MY_Controller
             $fullPrompt = "Create a high-quality square social media image."
                 . " Brand context: " . (string) $profile->company_name
                 . ". Founder idea context: " . (string) $profile->idea_summary
+                . ". Target customer profile: " . (string) $profile->target_customer_profile
                 . ". Image brief: " . $prompt
                 . ". Do not include excessive text in the image.";
 
@@ -1360,6 +1417,44 @@ class Hustler extends MY_Controller
 
         @chmod($dir . $filename, 0644);
         return $filename;
+    }
+
+    private function _storeProfileMediaFile($file, $profileID, $mediaType)
+    {
+        if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+            return '';
+        }
+
+        $maxBytes = 5 * 1024 * 1024;
+        $size = isset($file['size']) ? (int) $file['size'] : 0;
+        if ($size <= 0 || $size > $maxBytes) {
+            return '';
+        }
+
+        $ext = strtolower(pathinfo(isset($file['name']) ? $file['name'] : '', PATHINFO_EXTENSION));
+        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+        if (!in_array($ext, $allowed, true)) {
+            return '';
+        }
+
+        $dir = FCPATH . 'uploads/hustler_profiles/';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        if (!is_dir($dir) || !is_writable($dir)) {
+            return '';
+        }
+
+        $prefix = $mediaType === 'company_logo' ? 'company_logo' : 'founder_photo';
+        $filename = $prefix . '_' . (int) $profileID . '_' . date('YmdHis') . '.' . $ext;
+        $full = $dir . $filename;
+
+        if (!@move_uploaded_file($file['tmp_name'], $full)) {
+            return '';
+        }
+
+        @chmod($full, 0644);
+        return base_url('uploads/hustler_profiles/' . $filename);
     }
 
     private function _hash($string)

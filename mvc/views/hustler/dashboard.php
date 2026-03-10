@@ -20,9 +20,13 @@
     $founderName = trim((string) $profile->founder_name);
     $companyName = trim((string) $profile->company_name);
     $profilePhoto = isset($profile->profile_photo_url) ? trim((string) $profile->profile_photo_url) : '';
+    $companyLogo = isset($profile->company_logo_url) ? trim((string) $profile->company_logo_url) : '';
     $marketAccessAllowed = isset($market_access_allowed) ? (bool) $market_access_allowed : false;
     $marketAccessReason = isset($market_access_reason) ? (string) $market_access_reason : '';
     $marketGateFlash = (string) $this->session->flashdata('hustler_market_gate_error');
+    $marketLinkLabel = $marketAccessAllowed ? 'Market Access' : 'Market Access (Locked)';
+    $marketLinkHref = $marketAccessAllowed ? base_url('hustler/market-access') : '#';
+    $marketLinkTitle = $marketAccessAllowed ? 'Open Market Access' : ($marketAccessReason !== '' ? $marketAccessReason : 'Complete founder context first');
     $initials = 'FN';
     if ($founderName !== '') {
         $parts = preg_split('/\s+/', $founderName);
@@ -32,6 +36,19 @@
             $initials = trim($first . $second);
             if ($initials === '') {
                 $initials = 'FN';
+            }
+        }
+    }
+    $companyInitials = 'CO';
+    if ($companyName !== '') {
+        $cleanCompany = preg_replace('/[^A-Za-z0-9\s]/', ' ', $companyName);
+        $companyParts = preg_split('/\s+/', trim((string) $cleanCompany));
+        if (is_array($companyParts) && customCompute($companyParts)) {
+            $firstCompany = strtoupper(substr((string) $companyParts[0], 0, 1));
+            $secondCompany = isset($companyParts[1]) ? strtoupper(substr((string) $companyParts[1], 0, 1)) : '';
+            $companyInitials = trim($firstCompany . $secondCompany);
+            if ($companyInitials === '') {
+                $companyInitials = 'CO';
             }
         }
     }
@@ -45,11 +62,7 @@
 
         <nav class="hustler-sidebar-nav">
             <a class="active" href="<?=base_url('hustler/dashboard')?>">Weekly Plan</a>
-            <?php if ($marketAccessAllowed) { ?>
-                <a href="<?=base_url('hustler/market-access')?>">Market Access</a>
-            <?php } else { ?>
-                <a href="#" class="disabled" title="<?=htmlspecialchars($marketAccessReason !== '' ? $marketAccessReason : 'Complete founder context and weekly plan first')?>">Market Access (Locked)</a>
-            <?php } ?>
+            <a id="hustler-market-access-link" class="<?=$marketAccessAllowed ? '' : 'disabled'?>" href="<?=htmlspecialchars($marketLinkHref)?>" title="<?=htmlspecialchars($marketLinkTitle)?>"><?=htmlspecialchars($marketLinkLabel)?></a>
             <a href="<?=base_url('hustler/logout')?>">Log Out</a>
             <form method="post" action="<?=base_url('hustler/restart-profile')?>" onsubmit="return confirm('Restart profile and erase all generated data?');">
                 <button class="hustler-nav-danger" type="submit">Restart Profile</button>
@@ -93,23 +106,48 @@
 
     <main class="hustler-main">
         <?php if ($marketGateFlash !== '' || (!$marketAccessAllowed && $marketAccessReason !== '')) { ?>
-            <div class="hustler-gate-message">
+            <div class="hustler-gate-message" id="hustler-gate-message">
                 <?=htmlspecialchars($marketGateFlash !== '' ? $marketGateFlash : $marketAccessReason)?>
             </div>
+        <?php } else { ?>
+            <div class="hustler-gate-message" id="hustler-gate-message" style="display:none;"></div>
         <?php } ?>
 
         <section class="hustler-founder-card">
-            <div class="hustler-founder-avatar">
-                <?php if ($profilePhoto !== '') { ?>
-                    <img id="hustler-founder-avatar-image" src="<?=htmlspecialchars($profilePhoto)?>" alt="Founder profile photo">
-                <?php } else { ?>
-                    <span id="hustler-founder-avatar-fallback"><?=htmlspecialchars($initials)?></span>
-                <?php } ?>
+            <div class="hustler-founder-media-stack">
+                <div class="hustler-founder-avatar" id="hustler-founder-avatar">
+                    <?php if ($profilePhoto !== '') { ?>
+                        <img id="hustler-founder-avatar-image" src="<?=htmlspecialchars($profilePhoto)?>" alt="Founder profile photo">
+                    <?php } else { ?>
+                        <span id="hustler-founder-avatar-fallback"><?=htmlspecialchars($initials)?></span>
+                    <?php } ?>
+                </div>
+                <div class="hustler-company-avatar" id="hustler-company-avatar">
+                    <?php if ($companyLogo !== '') { ?>
+                        <img id="hustler-company-avatar-image" src="<?=htmlspecialchars($companyLogo)?>" alt="Company logo">
+                    <?php } else { ?>
+                        <span id="hustler-company-avatar-fallback"><?=htmlspecialchars($companyInitials)?></span>
+                    <?php } ?>
+                </div>
             </div>
             <div class="hustler-founder-copy">
                 <div class="hustler-founder-name" id="hustler-founder-name"><?=htmlspecialchars($founderName !== '' ? $founderName : 'Founder profile pending')?></div>
                 <div class="hustler-founder-company" id="hustler-company-name"><?=htmlspecialchars($companyName !== '' ? $companyName : 'Add founder company in the DB to display it here')?></div>
                 <div class="hustler-stage-pill" id="hustler-stage-label"><?=htmlspecialchars($profile->stage_label)?></div>
+            </div>
+            <div class="hustler-upload-actions">
+                <form method="post" action="<?=base_url('hustler/upload-media')?>" enctype="multipart/form-data" class="hustler-upload-form">
+                    <input type="hidden" name="media_type" value="founder_photo">
+                    <label for="hustler-founder-photo-input">Founder photo</label>
+                    <input id="hustler-founder-photo-input" type="file" name="media_file" accept=".jpg,.jpeg,.png,.webp" required>
+                    <button type="submit">Upload</button>
+                </form>
+                <form method="post" action="<?=base_url('hustler/upload-media')?>" enctype="multipart/form-data" class="hustler-upload-form">
+                    <input type="hidden" name="media_type" value="company_logo">
+                    <label for="hustler-company-logo-input">Company logo</label>
+                    <input id="hustler-company-logo-input" type="file" name="media_file" accept=".jpg,.jpeg,.png,.webp" required>
+                    <button type="submit">Upload</button>
+                </form>
             </div>
         </section>
 
@@ -117,7 +155,7 @@
             <div class="hustler-panel-head center">
                 <div class="hustler-eyebrow">Welcome to Hustler AI</div>
                 <div class="hustler-panel-title">Tell me about your startup idea</div>
-                <div class="hustler-panel-copy">Start with the idea/company, founder strengths, available time, budget, and current traction. I will diagnose and build your weekly action plan.</div>
+                <div class="hustler-panel-copy">Start with: founder name, company name + logo, idea/product, and target customer profile. Once these are captured, Market Access unlocks automatically.</div>
             </div>
 
             <div class="hustler-chat-log" id="hustler-chat-log">
@@ -128,7 +166,7 @@
                         </div>
                     <?php } ?>
                 <?php } else { ?>
-                    <div class="hustler-chat-bubble assistant">Welcome to Hatchers Hustler. What is your company idea, who is the founder, and what are your current constraints?</div>
+                    <div class="hustler-chat-bubble assistant">Welcome to Hatchers Hustler. Share 4 items to unlock Market Access: founder name, company name + logo, idea/product, and target customer profile. If you are unsure about ICP, I will help you define it.</div>
                 <?php } ?>
             </div>
 
@@ -210,6 +248,11 @@
 
 <script type="text/javascript">
     (function() {
+        var marketAccessUrl = '<?=base_url('hustler/market-access')?>';
+        var marketGenerateUrl = '<?=base_url('hustler/generate-market-access')?>';
+        var marketAccessUnlocked = <?=($marketAccessAllowed ? 'true' : 'false')?>;
+        var marketPrefetchStarted = false;
+
         function escapeHtml(text) {
             return $('<div>').text(text || '').html();
         }
@@ -283,7 +326,7 @@
         }
 
         function renderFounderAvatar(name, photoUrl) {
-            var $avatar = $('.hustler-founder-avatar');
+            var $avatar = $('#hustler-founder-avatar');
             if (!$avatar.length) {
                 return;
             }
@@ -293,6 +336,81 @@
             } else {
                 $avatar.html('<span id="hustler-founder-avatar-fallback">' + escapeHtml(founderInitials(name)) + '</span>');
             }
+        }
+
+        function companyInitials(name) {
+            name = (name || '').replace(/[^A-Za-z0-9\s]/g, ' ').trim();
+            if (!name) {
+                return 'CO';
+            }
+            var parts = name.split(/\s+/);
+            var first = parts[0] ? parts[0].charAt(0).toUpperCase() : '';
+            var second = parts[1] ? parts[1].charAt(0).toUpperCase() : '';
+            return (first + second) || 'CO';
+        }
+
+        function renderCompanyAvatar(name, logoUrl) {
+            var $avatar = $('#hustler-company-avatar');
+            if (!$avatar.length) {
+                return;
+            }
+
+            if (logoUrl) {
+                $avatar.html('<img id="hustler-company-avatar-image" src="' + escapeHtml(logoUrl) + '" alt="Company logo">');
+            } else {
+                $avatar.html('<span id="hustler-company-avatar-fallback">' + escapeHtml(companyInitials(name)) + '</span>');
+            }
+        }
+
+        function setGateMessage(message) {
+            var $gate = $('#hustler-gate-message');
+            if (!$gate.length) {
+                return;
+            }
+            if (!message) {
+                $gate.hide();
+                return;
+            }
+            $gate.text(message).show();
+        }
+
+        function updateMarketAccessLink(allowed, reason) {
+            var $link = $('#hustler-market-access-link');
+            if (!$link.length) {
+                return;
+            }
+
+            if (allowed) {
+                $link.removeClass('disabled');
+                $link.attr('href', marketAccessUrl);
+                $link.attr('title', 'Open Market Access');
+                $link.text('Market Access');
+                return;
+            }
+
+            var title = reason || 'Complete founder context first';
+            $link.addClass('disabled');
+            $link.attr('href', '#');
+            $link.attr('title', title);
+            $link.text('Market Access (Locked)');
+        }
+
+        function prefetchMarketAssets() {
+            if (marketPrefetchStarted) {
+                return;
+            }
+            marketPrefetchStarted = true;
+            setGateMessage('Market Access unlocked. Preparing Instagram and funnel assets now...');
+
+            $.post(marketGenerateUrl, { focus: 'Auto-generate initial market access assets from founder context.' }, function(res) {
+                if (res && res.ok) {
+                    setGateMessage('Market Access unlocked. Initial assets are ready. Click Market Access in the left menu.');
+                    return;
+                }
+                setGateMessage('Market Access unlocked. Click Market Access to generate assets now.');
+            }, 'json').fail(function() {
+                setGateMessage('Market Access unlocked. Click Market Access to generate assets now.');
+            });
         }
 
         function appendChat(role, text) {
@@ -423,6 +541,21 @@
                             $('#hustler-company-name').text(res.profile.company_name || 'Add founder company in the DB to display it here');
                             $('#hustler-stage-label').text(res.profile.stage_label || 'Needs diagnosis');
                             renderFounderAvatar(res.profile.founder_name || '', res.profile.profile_photo_url || '');
+                            renderCompanyAvatar(res.profile.company_name || '', res.profile.company_logo_url || '');
+                        }
+                        updateMarketAccessLink(!!res.market_access_allowed, res.market_access_reason || '');
+                        if (res.market_access_allowed) {
+                            if (!marketAccessUnlocked) {
+                                marketAccessUnlocked = true;
+                                prefetchMarketAssets();
+                            } else if (!marketPrefetchStarted) {
+                                setGateMessage('Market Access unlocked. Click Market Access in the left menu.');
+                            } else {
+                                setGateMessage($('#hustler-gate-message').text());
+                            }
+                        } else {
+                            marketAccessUnlocked = false;
+                            setGateMessage(res.market_access_reason || '');
                         }
                     });
                 } else {
