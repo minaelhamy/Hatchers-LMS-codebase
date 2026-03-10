@@ -16,6 +16,7 @@ class Hustler extends MY_Controller
     public $hustler_action_item_m;
     public $hustler_market_asset_m;
     public $hatcher_ai_settings_m;
+    private $lastImageError = '';
 
     public function __construct()
     {
@@ -295,17 +296,25 @@ class Hustler extends MY_Controller
             if (!customCompute($socialPosts)) {
                 $socialPosts = $this->_fallbackSocialPosts($profile, $postCount);
             }
+            $this->lastImageError = '';
             $postImages = $this->_generateSocialPostImages($apiKey, $socialPosts, $profile, 6);
             if (!customCompute($postImages)) {
                 $this->_json([
                     'ok' => false,
-                    'error' => 'Post image generation failed. Please verify the OpenAI key has image generation access and try regenerate.'
+                    'error' => 'Post image generation failed. ' . ($this->lastImageError !== '' ? $this->lastImageError : 'Please verify OpenAI image API access and try regenerate.')
                 ]);
                 return;
             }
             $instagramProfile = $this->_extractInstagramProfile($structured, $profile, $socialPosts);
             $funnelSuggestions = $this->_extractFunnels($structured, $profile);
             $funnelImages = $this->_generateFunnelBoardImages($apiKey, $funnelSuggestions, $profile, 3);
+            if (!customCompute($funnelImages)) {
+                $this->_json([
+                    'ok' => false,
+                    'error' => 'Funnel image generation failed. ' . ($this->lastImageError !== '' ? $this->lastImageError : 'Please verify OpenAI image API access and try regenerate.')
+                ]);
+                return;
+            }
 
             $marketOverview = $this->_textFieldOrFallback($structured, 'market_overview');
             if ($marketOverview === '') {
@@ -1361,6 +1370,9 @@ class Hustler extends MY_Controller
 
             $result = $this->_callOpenAIImage($apiKey, $fullPrompt, '1024x1024');
             if (!$result['ok']) {
+                if (isset($result['error'])) {
+                    $this->lastImageError = (string) $result['error'];
+                }
                 continue;
             }
 
@@ -1409,6 +1421,9 @@ class Hustler extends MY_Controller
 
             $result = $this->_callOpenAIImage($apiKey, $prompt, '1536x1024');
             if (!$result['ok']) {
+                if (isset($result['error'])) {
+                    $this->lastImageError = (string) $result['error'];
+                }
                 continue;
             }
 
@@ -1430,42 +1445,84 @@ class Hustler extends MY_Controller
 
     private function _callOpenAIImage($apiKey, $prompt, $size = '1024x1024')
     {
-        $payload = [
-            'model' => 'gpt-image-1',
-            'prompt' => $prompt,
-            'size' => $size,
-            'response_format' => 'b64_json'
-        ];
-
-        $ch = curl_init('https://api.openai.com/v1/images/generations');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, [
-            'Content-Type: application/json',
-            'Authorization: Bearer ' . $apiKey
-        ]);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-
-        $result = curl_exec($ch);
-        if ($result === false) {
-            $error = curl_error($ch);
-            curl_close($ch);
-            return ['ok' => false, 'error' => $error];
+        $models = ['gpt-image-1', 'dall-e-3', 'dall-e-2'];
+        $sizes = [$size];
+        if ($size !== '1024x1024') {
+            $sizes[] = '1024x1024';
         }
 
-        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        $data = json_decode($result, true);
+        $errors = [];
+        foreach ($models as $model) {
+            foreach ($sizes as $candidateSize) {
+                $payload = [
+                    'model' => $model,
+                    'prompt' => $prompt,
+                    'size' => $candidateSize
+                ];
+                if ($model !== 'gpt-image-1') {
+                    $payload['response_format'] = 'b64_json';
+                }
 
-        if ($status >= 400 || !is_array($data)) {
-            return ['ok' => false, 'error' => 'Image generation failed.'];
+                $ch = curl_init('https://api.openai.com/v1/images/generations');
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Content-Type: application/json',
+                    'Authorization: Bearer ' . $apiKey
+                ]);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+
+                $result = curl_exec($ch);
+                if ($result === false) {
+                    $errors[] = 'cURL: ' . curl_error($ch);
+                    curl_close($ch);
+                    continue;
+                }
+
+                $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                $data = json_decode($result, true);
+                if (!is_array($data)) {
+                    $errors[] = 'Invalid JSON response from OpenAI image API.';
+                    continue;
+                }
+
+                if ($status >= 400) {
+                    $errors[] = $this->_extractImageApiError($data, $status, $model, $candidateSize);
+                    continue;
+                }
+
+                if (isset($data['data'][0]['b64_json']) && trim((string) $data['data'][0]['b64_json']) !== '') {
+                    return ['ok' => true, 'b64' => $data['data'][0]['b64_json']];
+                }
+
+                if (isset($data['data'][0]['url']) && trim((string) $data['data'][0]['url']) !== '') {
+                    $url = trim((string) $data['data'][0]['url']);
+                    $binary = @file_get_contents($url);
+                    if ($binary !== false && $binary !== '') {
+                        return ['ok' => true, 'b64' => base64_encode($binary)];
+                    }
+                    $errors[] = "Image URL returned but could not download payload ({$model}, {$candidateSize}).";
+                    continue;
+                }
+
+                $errors[] = "No image payload returned ({$model}, {$candidateSize}).";
+            }
         }
 
-        if (!isset($data['data'][0]['b64_json'])) {
-            return ['ok' => false, 'error' => 'No image payload returned.'];
-        }
+        return ['ok' => false, 'error' => customCompute($errors) ? $errors[0] : 'Image generation failed.'];
+    }
 
-        return ['ok' => true, 'b64' => $data['data'][0]['b64_json']];
+    private function _extractImageApiError($data, $status, $model, $size)
+    {
+        $prefix = "OpenAI image error {$status} ({$model}, {$size}): ";
+        if (isset($data['error']['message'])) {
+            return $prefix . trim((string) $data['error']['message']);
+        }
+        if (isset($data['message'])) {
+            return $prefix . trim((string) $data['message']);
+        }
+        return $prefix . 'Unknown image API error.';
     }
 
     private function _storeGeneratedImage($b64, $profileID, $index)

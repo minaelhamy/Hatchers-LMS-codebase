@@ -394,7 +394,8 @@
         });
 
         var hasImages = <?=customCompute($postImages) ? 'true' : 'false'?>;
-        if (!hasImages) {
+        var hasFunnelImages = <?=customCompute($funnelImages) ? 'true' : 'false'?>;
+        if (!hasImages || !hasFunnelImages) {
             runGenerate(true);
         }
     })();
