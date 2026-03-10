@@ -296,8 +296,16 @@ class Hustler extends MY_Controller
                 $socialPosts = $this->_fallbackSocialPosts($profile, $postCount);
             }
             $postImages = $this->_generateSocialPostImages($apiKey, $socialPosts, $profile, 6);
+            if (!customCompute($postImages)) {
+                $this->_json([
+                    'ok' => false,
+                    'error' => 'Post image generation failed. Please verify the OpenAI key has image generation access and try regenerate.'
+                ]);
+                return;
+            }
             $instagramProfile = $this->_extractInstagramProfile($structured, $profile, $socialPosts);
             $funnelSuggestions = $this->_extractFunnels($structured, $profile);
+            $funnelImages = $this->_generateFunnelBoardImages($apiKey, $funnelSuggestions, $profile, 3);
 
             $marketOverview = $this->_textFieldOrFallback($structured, 'market_overview');
             if ($marketOverview === '') {
@@ -320,6 +328,7 @@ class Hustler extends MY_Controller
                 }, $socialPosts)),
                 'post_images_json' => json_encode($postImages),
                 'funnel_suggestions_json' => json_encode($funnelSuggestions),
+                'funnel_images_json' => json_encode($funnelImages),
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 
@@ -336,6 +345,7 @@ class Hustler extends MY_Controller
                     'social_posts' => json_decode($assetData['social_posts_json'], true),
                     'post_images' => json_decode($assetData['post_images_json'], true),
                     'funnel_suggestions' => json_decode($assetData['funnel_suggestions_json'], true),
+                    'funnel_images' => json_decode($assetData['funnel_images_json'], true),
                     'updated_at' => $assetData['updated_at']
                 ]
             ]);
@@ -1349,7 +1359,7 @@ class Hustler extends MY_Controller
                 . ". Image brief: " . $prompt
                 . ". Do not include excessive text in the image.";
 
-            $result = $this->_callOpenAIImage($apiKey, $fullPrompt);
+            $result = $this->_callOpenAIImage($apiKey, $fullPrompt, '1024x1024');
             if (!$result['ok']) {
                 continue;
             }
@@ -1369,12 +1379,62 @@ class Hustler extends MY_Controller
         return $images;
     }
 
-    private function _callOpenAIImage($apiKey, $prompt)
+    private function _generateFunnelBoardImages($apiKey, $funnels, $profile, $limit = 3)
+    {
+        $images = [];
+        $count = 0;
+        foreach ($funnels as $funnel) {
+            if ($count >= $limit) {
+                break;
+            }
+
+            if (!is_array($funnel)) {
+                continue;
+            }
+
+            $title = isset($funnel['title']) ? trim((string) $funnel['title']) : 'Funnel Plan';
+            $subtitle = isset($funnel['subtitle']) ? trim((string) $funnel['subtitle']) : '';
+            $steps = isset($funnel['steps']) && is_array($funnel['steps']) ? $funnel['steps'] : [];
+            $stepsText = implode(' | ', array_slice(array_map('strval', $steps), 0, 4));
+            $designType = isset($funnel['design_type']) ? trim((string) $funnel['design_type']) : 'conversion';
+
+            $prompt = "Create a polished startup funnel board visual."
+                . " Style template: {$designType}."
+                . " Brand: " . (string) $profile->company_name
+                . ". Idea: " . (string) $profile->idea_summary
+                . ". Board title: {$title}."
+                . " Subtitle: {$subtitle}."
+                . " Steps: {$stepsText}."
+                . " Create a clean infographic look with minimal text and strong visual hierarchy.";
+
+            $result = $this->_callOpenAIImage($apiKey, $prompt, '1536x1024');
+            if (!$result['ok']) {
+                continue;
+            }
+
+            $filename = $this->_storeGeneratedFunnelImage($result['b64'], $profile->hustler_founder_profile_id, $count + 1);
+            if ($filename === '') {
+                continue;
+            }
+
+            $images[] = [
+                'design_type' => $designType,
+                'title' => $title,
+                'image_url' => base_url('uploads/hustler_funnels/' . $filename)
+            ];
+            $count++;
+        }
+
+        return $images;
+    }
+
+    private function _callOpenAIImage($apiKey, $prompt, $size = '1024x1024')
     {
         $payload = [
             'model' => 'gpt-image-1',
             'prompt' => $prompt,
-            'size' => '512x512'
+            'size' => $size,
+            'response_format' => 'b64_json'
         ];
 
         $ch = curl_init('https://api.openai.com/v1/images/generations');
@@ -1425,6 +1485,32 @@ class Hustler extends MY_Controller
         }
 
         $filename = 'profile_' . (int) $profileID . '_' . date('YmdHis') . '_' . (int) $index . '.png';
+        $saved = @file_put_contents($dir . $filename, $binary);
+        if ($saved === false) {
+            return '';
+        }
+
+        @chmod($dir . $filename, 0644);
+        return $filename;
+    }
+
+    private function _storeGeneratedFunnelImage($b64, $profileID, $index)
+    {
+        $dir = FCPATH . 'uploads/hustler_funnels/';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+
+        if (!is_dir($dir) || !is_writable($dir)) {
+            return '';
+        }
+
+        $binary = base64_decode((string) $b64);
+        if ($binary === false) {
+            return '';
+        }
+
+        $filename = 'funnel_' . (int) $profileID . '_' . date('YmdHis') . '_' . (int) $index . '.png';
         $saved = @file_put_contents($dir . $filename, $binary);
         if ($saved === false) {
             return '';

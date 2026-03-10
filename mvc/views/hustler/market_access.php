@@ -5,6 +5,7 @@
     $postImages = customCompute($market_asset) ? json_decode((string) $market_asset->post_images_json, true) : [];
     $instagramProfile = customCompute($market_asset) ? json_decode((string) $market_asset->instagram_profile_json, true) : [];
     $funnels = customCompute($market_asset) ? json_decode((string) $market_asset->funnel_suggestions_json, true) : [];
+    $funnelImages = customCompute($market_asset) ? json_decode((string) $market_asset->funnel_images_json, true) : [];
 
     if (!is_array($competitors)) $competitors = [];
     if (!is_array($angles)) $angles = [];
@@ -12,6 +13,7 @@
     if (!is_array($postImages)) $postImages = [];
     if (!is_array($instagramProfile)) $instagramProfile = [];
     if (!is_array($funnels)) $funnels = [];
+    if (!is_array($funnelImages)) $funnelImages = [];
 
     $igUsername = isset($instagramProfile['username']) ? (string) $instagramProfile['username'] : 'founderprofile';
     $igDisplayName = isset($instagramProfile['display_name']) ? (string) $instagramProfile['display_name'] : ($profile->company_name !== '' ? $profile->company_name : 'Founder Company');
@@ -197,6 +199,7 @@
 <script type="text/javascript">
     (function() {
         var initialFunnels = <?=json_encode($funnels)?>;
+        var initialFunnelImages = <?=json_encode($funnelImages)?>;
 
         function escapeHtml(text) {
             return $('<div>').text(text || '').html();
@@ -232,14 +235,19 @@
             }
         }
 
-        function renderFunnels(funnels) {
+        function renderFunnels(funnels, funnelImages) {
             funnels = Array.isArray(funnels) ? funnels.slice(0, 3) : [];
+            funnelImages = Array.isArray(funnelImages) ? funnelImages : [];
             if (!funnels.length) {
                 $('#hustler-funnels-wrap').html('<div class="hustler-empty-image-grid">Three funnel board frames will appear after generation.</div>');
                 return;
             }
 
             var html = funnels.map(function(funnel, idx) {
+                var funnelImageUrl = funnelImages[idx] && funnelImages[idx].image_url ? funnelImages[idx].image_url : '';
+                var heroImageHtml = funnelImageUrl
+                    ? '<div class="hustler-funnel-hero"><img src="' + escapeHtml(funnelImageUrl) + '" alt=""></div>'
+                    : '';
                 var steps = Array.isArray(funnel.steps) ? funnel.steps.slice(0, 4) : [];
                 while (steps.length < 4) {
                     steps.push('Step ' + (steps.length + 1));
@@ -255,6 +263,7 @@
 
                 if (template === 'awareness') {
                     return '<article class="hustler-funnel-frame awareness">' +
+                        heroImageHtml +
                         '<h3>' + title + '</h3>' +
                         '<p class="sub">' + subtitle + '</p>' +
                         '<div class="awareness-rows">' +
@@ -269,6 +278,7 @@
 
                 if (template === 'conversion') {
                     return '<article class="hustler-funnel-frame conversion">' +
+                        heroImageHtml +
                         '<h3>' + title + '</h3>' +
                         '<p class="sub">' + subtitle + '</p>' +
                         '<div class="conversion-rows">' +
@@ -283,6 +293,7 @@
 
                 if (template === 'dark_flow') {
                     return '<article class="hustler-funnel-frame dark-flow">' +
+                        heroImageHtml +
                         '<h3>' + title + '</h3>' +
                         '<p class="sub">' + subtitle + '</p>' +
                         '<div class="dark-track">' +
@@ -296,6 +307,7 @@
                 }
 
                 return '<article class="hustler-funnel-frame lead-capture">' +
+                    heroImageHtml +
                     '<h3>' + title + '</h3>' +
                     '<p class="sub">' + subtitle + '</p>' +
                     '<div class="lead-cards">' +
@@ -352,7 +364,7 @@
                     ? res.market_asset.instagram_profile.logo_url
                     : '';
                 renderImageGrid(res.market_asset.post_images || [], logoUrl);
-                renderFunnels(res.market_asset.funnel_suggestions || []);
+                renderFunnels(res.market_asset.funnel_suggestions || [], res.market_asset.funnel_images || []);
             }, 'json').fail(function(xhr) {
                 var serverMessage = 'Request failed. Please try again.';
                 if (xhr && xhr.responseJSON && xhr.responseJSON.error) {
@@ -372,9 +384,12 @@
             });
         }
 
-        renderFunnels(initialFunnels);
+        renderFunnels(initialFunnels, initialFunnelImages);
 
         $('#hustler-market-generate').on('click', function() {
+            if (!confirm('Regenerate will replace current Instagram posts and funnel results. Continue?')) {
+                return;
+            }
             runGenerate(false);
         });
 
