@@ -508,149 +508,339 @@
 }
 
 .market-redesign .hustler-main {
-    max-width: 980px;
+    max-width: 1060px;
 }
 
-.hustler-instagram-shell {
+.hustler-instagram-frame {
     margin-top: 18px;
-    border: 1px solid #ece3d8;
-    border-radius: 22px;
+    border: 1px solid #e5ddd3;
+    border-radius: 26px;
     background: #fff;
-    padding: 18px;
+    padding: 20px;
+    max-width: 780px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-.hustler-instagram-top {
-    font-weight: 800;
-    font-size: 22px;
-    margin-bottom: 14px;
-}
-
-.hustler-instagram-profile {
+.hustler-instagram-phone-head {
     display: flex;
-    gap: 20px;
+    justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    font-size: 22px;
+    margin-bottom: 18px;
+}
+
+.hustler-instagram-phone-head .icon,
+.hustler-instagram-phone-head .icon-group {
+    color: #1b1510;
+    font-size: 26px;
+    letter-spacing: 0.08em;
+}
+
+.hustler-instagram-phone-head strong {
+    font-size: 48px;
+    line-height: 1;
+    color: #0f0c09;
+    font-weight: 800;
+}
+
+.hustler-instagram-profile-row {
+    display: grid;
+    grid-template-columns: 126px minmax(0, 1fr);
+    gap: 26px;
+    align-items: center;
 }
 
 .hustler-instagram-avatar {
-    width: 90px;
-    height: 90px;
+    width: 126px;
+    height: 126px;
     border-radius: 50%;
     overflow: hidden;
-    border: 1px solid #e5dbd0;
+    border: 1px solid #d9d0c5;
     background: #f3e9de;
     display: grid;
     place-items: center;
+    font-size: 20px;
     font-weight: 800;
+    color: #5e4937;
 }
 
 .hustler-instagram-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
 }
 
 .hustler-instagram-stats {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-    width: 100%;
+    gap: 18px;
 }
 
 .hustler-instagram-stats div {
     display: grid;
-    gap: 2px;
+    text-align: center;
+    align-content: center;
 }
 
 .hustler-instagram-stats strong {
-    font-size: 24px;
+    font-size: 58px;
+    line-height: 1;
 }
 
 .hustler-instagram-stats span {
-    color: #70665f;
+    color: #312821;
+    font-size: 16px;
+    margin-top: 8px;
 }
 
 .hustler-instagram-bio {
-    margin-bottom: 14px;
+    margin-top: 18px;
+    margin-bottom: 16px;
+    color: #13100d;
+    font-size: 18px;
+    line-height: 1.35;
+}
+
+.hustler-instagram-bio strong {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 44px;
+    line-height: 1.05;
 }
 
 .hustler-instagram-bio a {
-    color: #295fbc;
+    display: inline-block;
+    margin-top: 10px;
+    color: #234f9e;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 18px;
 }
 
-.instagram-grid {
+.hustler-instagram-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.hustler-instagram-actions span {
+    text-align: center;
+    border: 1px solid #ddd3c6;
+    background: #f5f2ee;
+    border-radius: 10px;
+    padding: 11px 8px;
+    font-weight: 700;
+    font-size: 17px;
+}
+
+.hustler-instagram-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    align-items: center;
+    justify-items: center;
+    border-top: 1px solid #ebe2d7;
+    border-bottom: 1px solid #ebe2d7;
+    padding: 12px 0;
+}
+
+.hustler-instagram-tabs span {
+    font-size: 26px;
+}
+
+.hustler-instagram-post-grid {
+    margin-top: 10px;
+    display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
 }
 
-.instagram-grid .hustler-image-card {
-    border-radius: 8px;
+.hustler-instagram-post {
+    aspect-ratio: 1 / 1;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #f0e9df;
 }
 
-.instagram-grid .hustler-image-card img {
-    aspect-ratio: 1 / 1;
+.hustler-instagram-post img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hustler-instagram-post-placeholder {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: #7f7368;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .hustler-funnels-wrap {
-    margin-top: 18px;
+    margin-top: 22px;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+    gap: 18px;
 }
 
-.hustler-funnel-card {
-    border: 1px solid #ece3d8;
-    border-radius: 16px;
-    padding: 14px;
+.hustler-funnel-frame {
+    border: 1px solid #e8dfd4;
+    border-radius: 20px;
     background: #fff;
+    padding: 22px;
 }
 
-.hustler-funnel-card.style-awareness {
-    border-color: #c7d7cb;
-    background: #f8fcf8;
+.hustler-funnel-frame h3 {
+    margin: 0;
+    font-size: 56px;
+    line-height: 1.1;
+    color: #15110d;
+    letter-spacing: -0.02em;
 }
 
-.hustler-funnel-card.style-conversion {
-    border-color: #d5d0e7;
-    background: #faf9ff;
+.hustler-funnel-frame .sub {
+    margin: 12px 0 16px;
+    color: #5e554d;
+    font-size: 24px;
+    line-height: 1.25;
 }
 
-.hustler-funnel-card.style-lead_capture {
-    border-color: #efd9b2;
-    background: #fffdf8;
-}
-
-.hustler-funnel-title {
-    font-size: 20px;
-    font-weight: 800;
-    color: #1f1711;
-}
-
-.hustler-funnel-subtitle {
-    color: #6b615a;
-    margin-top: 6px;
-}
-
-.hustler-funnel-steps {
-    margin-top: 10px;
-    display: grid;
-    gap: 8px;
-}
-
-.hustler-funnel-steps div {
-    border: 1px solid #ece3d8;
-    border-radius: 10px;
-    padding: 8px 10px;
-    font-size: 13px;
-    background: #fff;
-}
-
-.hustler-funnel-cta {
-    margin-top: 10px;
+.hustler-funnel-frame .cta {
+    margin-top: 16px;
+    color: #8e0f4e;
     font-weight: 700;
-    color: #9b0d4d;
+    font-size: 18px;
+}
+
+.hustler-funnel-frame.awareness {
+    background: linear-gradient(180deg, #ffffff 0%, #fbfcff 100%);
+}
+
+.awareness-rows {
+    display: grid;
+    gap: 12px;
+}
+
+.awareness-rows div {
+    display: grid;
+    grid-template-columns: 74px minmax(0, 1fr);
+    align-items: center;
+    border: 2px solid #c4ced8;
+    border-radius: 999px;
+    min-height: 72px;
+    padding: 0 18px;
+}
+
+.awareness-rows span {
+    font-size: 34px;
+    font-weight: 800;
+    color: #2a6253;
+}
+
+.awareness-rows strong {
+    font-size: 24px;
+}
+
+.hustler-funnel-frame.conversion {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.conversion-rows {
+    display: grid;
+    gap: 12px;
+}
+
+.conversion-rows div {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    align-items: center;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid #dae0e7;
+    min-height: 74px;
+}
+
+.conversion-rows em {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    background: #2f6558;
+    color: #fff;
+    font-style: normal;
+    font-size: 36px;
+    font-weight: 800;
+}
+
+.conversion-rows span {
+    padding: 0 18px;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.hustler-funnel-frame.lead-capture {
+    background: linear-gradient(180deg, #ffffff 0%, #fffdf9 100%);
+}
+
+.lead-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.lead-cards div {
+    min-height: 220px;
+    border: 2px solid #d5ded7;
+    border-radius: 14px;
+    padding: 16px 12px;
+    display: grid;
+    align-content: start;
+    gap: 10px;
+}
+
+.lead-cards b {
+    font-size: 34px;
+    color: #2c6657;
+}
+
+.lead-cards span {
+    font-size: 22px;
+    line-height: 1.3;
+}
+
+.hustler-funnel-frame.dark-flow {
+    background: radial-gradient(circle at top left, #1a1b57, #10133c 60%, #0d0f31 100%);
+    color: #f0f1ff;
+    border-color: #2f336c;
+}
+
+.hustler-funnel-frame.dark-flow h3,
+.hustler-funnel-frame.dark-flow .sub {
+    color: #f0f1ff;
+}
+
+.dark-track {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.dark-track div {
+    border-radius: 10px;
+    border: 1px solid #545bb0;
+    padding: 12px 10px;
+    font-size: 17px;
+    min-height: 96px;
+    display: grid;
+    align-content: center;
+}
+
+.dark-track .goal {
+    border-color: #2cc29c;
+    background: rgba(44, 194, 156, 0.18);
 }
 
 .hustler-demo-disclaimer {
@@ -707,10 +897,10 @@
     border-radius: 24px;
     box-shadow: 0 18px 42px rgba(45, 35, 24, 0.05);
     padding: 18px 20px;
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
     gap: 16px;
     align-items: center;
-    justify-content: space-between;
 }
 
 .hustler-gate-message {
@@ -739,13 +929,14 @@
     display: flex;
     gap: 10px;
     align-items: center;
+    flex-shrink: 0;
 }
 
 .hustler-company-avatar {
-    width: 54px;
-    height: 54px;
-    border-radius: 16px;
-    background: #fff;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f5e8dd, #eedbc9);
     border: 1px solid #e3d2c1;
     display: grid;
     place-items: center;
@@ -757,12 +948,14 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
 }
 
 .hustler-company-avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
 }
 
 .hustler-founder-avatar span {
@@ -772,7 +965,7 @@
 }
 
 .hustler-company-avatar span {
-    font-size: 16px;
+    font-size: 20px;
     font-weight: 800;
     color: #6f4830;
 }
@@ -888,13 +1081,54 @@
         font-size: 30px;
     }
 
+    .hustler-instagram-frame {
+        max-width: 100%;
+    }
+
+    .hustler-instagram-phone-head strong {
+        font-size: 34px;
+    }
+
+    .hustler-instagram-profile-row {
+        grid-template-columns: 84px minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    .hustler-instagram-avatar {
+        width: 84px;
+        height: 84px;
+    }
+
+    .hustler-instagram-stats strong {
+        font-size: 34px;
+    }
+
+    .hustler-funnel-frame h3 {
+        font-size: 34px;
+    }
+
+    .hustler-funnel-frame .sub {
+        font-size: 18px;
+    }
+
+    .awareness-rows strong,
+    .conversion-rows span,
+    .lead-cards span {
+        font-size: 17px;
+    }
+
     .hustler-founder-card {
+        grid-template-columns: 1fr;
         align-items: flex-start;
-        flex-wrap: wrap;
     }
 
     .hustler-upload-actions {
         width: 100%;
         min-width: 0;
+    }
+
+    .lead-cards,
+    .dark-track {
+        grid-template-columns: 1fr;
     }
 }

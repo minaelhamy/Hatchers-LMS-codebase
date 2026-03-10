@@ -612,6 +612,7 @@ class Hustler extends MY_Controller
             . "\nsocial_posts must contain exactly " . (int) $postCount . " items."
             . "\nEach item can be either a string caption OR an object with keys caption and image_prompt."
             . "\nfunnel_suggestions must contain exactly 3 objects with keys: design_type, title, subtitle, steps (array of 4), cta."
+            . "\nAllowed design_type values: awareness, conversion, lead_capture, dark_flow."
             . "\nUse Sell Like Crazy style hooks: bold promise, lead magnet, authority proof, urgency and clear CTA."
             . "\nIf the user asks for Instagram, tailor formats to Instagram (hooks, carousel ideas, reel prompts, captions, CTA)."
             . ($focus !== '' ? "\nFocus area: " . $focus : '')
@@ -1243,6 +1244,10 @@ class Hustler extends MY_Controller
     {
         $raw = isset($structured['funnel_suggestions']) && is_array($structured['funnel_suggestions']) ? $structured['funnel_suggestions'] : [];
         $mapped = [];
+        $templatePool = ['awareness', 'conversion', 'lead_capture', 'dark_flow'];
+        shuffle($templatePool);
+        $selectedTemplates = array_slice($templatePool, 0, 3);
+        $poolIndex = 0;
         foreach ($raw as $row) {
             if (!is_array($row)) {
                 continue;
@@ -1261,8 +1266,11 @@ class Hustler extends MY_Controller
                 }
             }
 
+            $designType = $selectedTemplates[$poolIndex % count($selectedTemplates)];
+            $poolIndex++;
+
             $mapped[] = [
-                'design_type' => isset($row['design_type']) ? trim((string) $row['design_type']) : 'funnel',
+                'design_type' => $designType,
                 'title' => isset($row['title']) ? trim((string) $row['title']) : '',
                 'subtitle' => isset($row['subtitle']) ? trim((string) $row['subtitle']) : '',
                 'steps' => $steps,
@@ -1299,6 +1307,13 @@ class Hustler extends MY_Controller
                     'subtitle' => 'Capture and qualify quality leads',
                     'steps' => ['Traffic campaign', 'Landing page', 'Qualification form', 'Follow-up sequence'],
                     'cta' => 'Start lead capture'
+                ],
+                [
+                    'design_type' => 'dark_flow',
+                    'title' => 'First Customer Funnel',
+                    'subtitle' => 'From click to paying customer in one flow',
+                    'steps' => ['Traffic source', 'Landing page hook', 'Qualification call', 'Close with urgency'],
+                    'cta' => 'Launch this funnel'
                 ]
             ];
             foreach ($fallbacks as $f) {
