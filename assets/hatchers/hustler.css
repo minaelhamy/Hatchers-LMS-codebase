@@ -171,6 +171,18 @@
     pointer-events: none;
 }
 
+.hustler-nav-danger {
+    width: 100%;
+    margin-top: 8px;
+    border: 1px solid #e9c9c9;
+    background: #fff5f5;
+    color: #8f2b2b;
+    border-radius: 14px;
+    padding: 11px 12px;
+    font-weight: 700;
+    text-align: left;
+}
+
 .hustler-sidebar-section {
     margin-top: 20px;
 }
@@ -495,6 +507,162 @@
     font-size: 13px;
 }
 
+.market-redesign .hustler-main {
+    max-width: 980px;
+}
+
+.hustler-instagram-shell {
+    margin-top: 18px;
+    border: 1px solid #ece3d8;
+    border-radius: 22px;
+    background: #fff;
+    padding: 18px;
+}
+
+.hustler-instagram-top {
+    font-weight: 800;
+    font-size: 22px;
+    margin-bottom: 14px;
+}
+
+.hustler-instagram-profile {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.hustler-instagram-avatar {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid #e5dbd0;
+    background: #f3e9de;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+}
+
+.hustler-instagram-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.hustler-instagram-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+    width: 100%;
+}
+
+.hustler-instagram-stats div {
+    display: grid;
+    gap: 2px;
+}
+
+.hustler-instagram-stats strong {
+    font-size: 24px;
+}
+
+.hustler-instagram-stats span {
+    color: #70665f;
+}
+
+.hustler-instagram-bio {
+    margin-bottom: 14px;
+}
+
+.hustler-instagram-bio a {
+    color: #295fbc;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.instagram-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.instagram-grid .hustler-image-card {
+    border-radius: 8px;
+}
+
+.instagram-grid .hustler-image-card img {
+    aspect-ratio: 1 / 1;
+}
+
+.hustler-funnels-wrap {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.hustler-funnel-card {
+    border: 1px solid #ece3d8;
+    border-radius: 16px;
+    padding: 14px;
+    background: #fff;
+}
+
+.hustler-funnel-card.style-awareness {
+    border-color: #c7d7cb;
+    background: #f8fcf8;
+}
+
+.hustler-funnel-card.style-conversion {
+    border-color: #d5d0e7;
+    background: #faf9ff;
+}
+
+.hustler-funnel-card.style-lead_capture {
+    border-color: #efd9b2;
+    background: #fffdf8;
+}
+
+.hustler-funnel-title {
+    font-size: 20px;
+    font-weight: 800;
+    color: #1f1711;
+}
+
+.hustler-funnel-subtitle {
+    color: #6b615a;
+    margin-top: 6px;
+}
+
+.hustler-funnel-steps {
+    margin-top: 10px;
+    display: grid;
+    gap: 8px;
+}
+
+.hustler-funnel-steps div {
+    border: 1px solid #ece3d8;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 13px;
+    background: #fff;
+}
+
+.hustler-funnel-cta {
+    margin-top: 10px;
+    font-weight: 700;
+    color: #9b0d4d;
+}
+
+.hustler-demo-disclaimer {
+    margin-top: 14px;
+    border: 1px dashed #e8b9b9;
+    background: #fff7f7;
+    border-radius: 12px;
+    color: #904646;
+    font-size: 12px;
+    padding: 10px 12px;
+}
+
 .hustler-generation-status {
     margin-top: 12px;
     padding: 12px 14px;
@@ -630,6 +798,11 @@
     .hustler-diagnosis-grid,
     .hustler-market-grid,
     .hustler-image-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .hustler-funnels-wrap,
+    .hustler-instagram-stats {
         grid-template-columns: 1fr;
     }
 

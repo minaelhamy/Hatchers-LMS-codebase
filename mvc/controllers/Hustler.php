@@ -219,6 +219,10 @@ class Hustler extends MY_Controller
         } else {
             $items = $this->_getCurrentActionItems($profile->hustler_founder_profile_id);
         }
+        $marketGate = $this->_marketAccessGate($profile);
+        if ($marketGate['allowed']) {
+            $assistantReply .= "\n\nYou now have enough progress to open Market Access from the left menu.";
+        }
 
         $this->_json([
             'ok' => true,
@@ -226,7 +230,8 @@ class Hustler extends MY_Controller
             'action_items' => $items,
             'diagnosis' => $this->_decodeJsonField($profile->last_diagnosis_json),
             'profile' => $this->_profileViewData($profile),
-            'ready_for_diagnosis' => $readyForDiagnosis
+            'ready_for_diagnosis' => $readyForDiagnosis,
+            'market_access_allowed' => $marketGate['allowed']
         ]);
     }
 
@@ -254,7 +259,7 @@ class Hustler extends MY_Controller
 
             $focus = trim((string) $this->input->post('focus'));
             $settings = $this->hatcher_ai_settings_m->get_latest_settings();
-            $postCount = $this->_extractRequestedPostCount($focus, 30);
+            $postCount = $this->_extractRequestedPostCount($focus, 6);
 
             $payload = [
                 'model' => customCompute($settings) ? $settings->model : 'gpt-4o-mini',
@@ -286,7 +291,12 @@ class Hustler extends MY_Controller
             }
 
             $socialPosts = $this->_extractSocialPosts($structured, $postCount);
-            $postImages = $this->_generateSocialPostImages($apiKey, $socialPosts, $profile, 4);
+            if (!customCompute($socialPosts)) {
+                $socialPosts = $this->_fallbackSocialPosts($profile, $postCount);
+            }
+            $postImages = $this->_generateSocialPostImages($apiKey, $socialPosts, $profile, 6);
+            $instagramProfile = $this->_extractInstagramProfile($structured, $profile, $socialPosts);
+            $funnelSuggestions = $this->_extractFunnels($structured, $profile);
 
             $marketOverview = $this->_textFieldOrFallback($structured, 'market_overview');
             if ($marketOverview === '') {
@@ -301,12 +311,14 @@ class Hustler extends MY_Controller
             $assetData = [
                 'market_overview' => $marketOverview,
                 'ideal_customer_profile' => $icp,
+                'instagram_profile_json' => json_encode($instagramProfile),
                 'competitor_patterns_json' => json_encode($this->_normalizeList(isset($structured['competitor_patterns']) ? $structured['competitor_patterns'] : [])),
                 'distribution_angles_json' => json_encode($this->_normalizeList(isset($structured['distribution_angles']) ? $structured['distribution_angles'] : [])),
                 'social_posts_json' => json_encode(array_map(function ($row) {
                     return isset($row['caption']) ? $row['caption'] : '';
                 }, $socialPosts)),
                 'post_images_json' => json_encode($postImages),
+                'funnel_suggestions_json' => json_encode($funnelSuggestions),
                 'updated_at' => date('Y-m-d H:i:s')
             ];
 
@@ -317,10 +329,12 @@ class Hustler extends MY_Controller
                 'market_asset' => [
                     'market_overview' => $assetData['market_overview'],
                     'ideal_customer_profile' => $assetData['ideal_customer_profile'],
+                    'instagram_profile' => json_decode($assetData['instagram_profile_json'], true),
                     'competitor_patterns' => json_decode($assetData['competitor_patterns_json'], true),
                     'distribution_angles' => json_decode($assetData['distribution_angles_json'], true),
                     'social_posts' => json_decode($assetData['social_posts_json'], true),
                     'post_images' => json_decode($assetData['post_images_json'], true),
+                    'funnel_suggestions' => json_decode($assetData['funnel_suggestions_json'], true),
                     'updated_at' => $assetData['updated_at']
                 ]
             ]);
@@ -342,6 +356,39 @@ class Hustler extends MY_Controller
         ]);
 
         redirect(base_url('hustler'));
+    }
+
+    public function restart_profile()
+    {
+        $investor = $this->_requireAuth();
+        $profile = $this->_ensureProfile($investor->hustler_investor_id);
+        $profileID = (int) $profile->hustler_founder_profile_id;
+
+        $this->db->delete('hustler_conversations', ['hustler_founder_profile_id' => $profileID]);
+        $this->db->delete('hustler_action_items', ['hustler_founder_profile_id' => $profileID]);
+        $this->db->delete('hustler_market_assets', ['hustler_founder_profile_id' => $profileID]);
+
+        $this->hustler_profile_m->upsert_profile($investor->hustler_investor_id, [
+            'founder_name' => '',
+            'founder_email' => '',
+            'profile_photo_url' => '',
+            'company_name' => '',
+            'idea_summary' => '',
+            'stage_label' => 'Needs diagnosis',
+            'skills_summary' => '',
+            'weekly_time_commitment' => '',
+            'capital_available' => '',
+            'traction_summary' => '',
+            'constraints_summary' => '',
+            'competitor_notes' => '',
+            'memory_summary' => '',
+            'last_diagnosis_json' => json_encode([]),
+            'last_plan_json' => json_encode([]),
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
+
+        $this->session->set_flashdata('hustler_market_gate_error', 'Profile restarted. You can start from scratch with a new idea.');
+        redirect(base_url('hustler/dashboard'));
     }
 
     private function _render($subview, $data = [])
@@ -497,7 +544,7 @@ class Hustler extends MY_Controller
             . "\nExisting founder context:\n" . json_encode($context);
     }
 
-    private function _buildMarketAccessPrompt($profile, $focus, $postCount = 30)
+    private function _buildMarketAccessPrompt($profile, $focus, $postCount = 6)
     {
         $context = [
             'founder_name' => (string) $profile->founder_name,
@@ -513,11 +560,14 @@ class Hustler extends MY_Controller
         return "Build a market-access brief and social media starter pack for this founder."
             . "\nUse the founder context below and infer likely competitor patterns from broadly known market behavior and channel norms."
             . "\nIf exact competitor names are unknown, explicitly mark competitor insights as inferred."
-            . "\nReturn JSON only with keys: market_overview, ideal_customer_profile, competitor_patterns, distribution_angles, social_posts."
+            . "\nReturn JSON only with keys: market_overview, ideal_customer_profile, instagram_profile, competitor_patterns, distribution_angles, social_posts, funnel_suggestions."
+            . "\ninstagram_profile object keys: username, display_name, bio, website, followers, following."
             . "\ncompetitor_patterns should be an array of short bullets."
             . "\ndistribution_angles should be an array of short bullets."
             . "\nsocial_posts must contain exactly " . (int) $postCount . " items."
             . "\nEach item can be either a string caption OR an object with keys caption and image_prompt."
+            . "\nfunnel_suggestions must contain exactly 3 objects with keys: design_type, title, subtitle, steps (array of 4), cta."
+            . "\nUse Sell Like Crazy style hooks: bold promise, lead magnet, authority proof, urgency and clear CTA."
             . "\nIf the user asks for Instagram, tailor formats to Instagram (hooks, carousel ideas, reel prompts, captions, CTA)."
             . ($focus !== '' ? "\nFocus area: " . $focus : '')
             . "\nFounder context:\n" . json_encode($context);
@@ -732,6 +782,14 @@ class Hustler extends MY_Controller
 
     private function _marketAccessGate($profile)
     {
+        $userMessageCount = $this->_countUserMessages((int) $profile->hustler_founder_profile_id);
+        if ($userMessageCount < 5) {
+            return [
+                'allowed' => false,
+                'reason' => 'Market Access unlocks after at least 5 chat exchanges with AI Mentor.'
+            ];
+        }
+
         $required = [
             'idea_summary' => trim((string) $profile->idea_summary),
             'weekly_time_commitment' => trim((string) $profile->weekly_time_commitment),
@@ -811,7 +869,7 @@ class Hustler extends MY_Controller
         $count = (int) $default;
         if (preg_match('/\b([1-9][0-9]?)\s+(?:social\s+)?posts?\b/i', (string) $focus, $matches)) {
             $candidate = isset($matches[1]) ? (int) $matches[1] : $count;
-            if ($candidate >= 10 && $candidate <= 40) {
+            if ($candidate >= 6 && $candidate <= 40) {
                 $count = $candidate;
             }
         }
@@ -826,7 +884,7 @@ class Hustler extends MY_Controller
             'input' => [
                 [
                     'role' => 'user',
-                    'content' => "Convert this content into strict JSON with keys: market_overview, ideal_customer_profile, competitor_patterns, distribution_angles, social_posts. social_posts can be strings or objects with caption and image_prompt. Do not add any explanation.\n\nContent:\n" . (string) $rawText
+                    'content' => "Convert this content into strict JSON with keys: market_overview, ideal_customer_profile, instagram_profile, competitor_patterns, distribution_angles, social_posts, funnel_suggestions. social_posts can be strings or objects with caption and image_prompt. funnel_suggestions should be exactly 3 objects. Do not add any explanation.\n\nContent:\n" . (string) $rawText
                 ]
             ],
             'instructions' => 'Output JSON only.',
@@ -1069,6 +1127,133 @@ class Hustler extends MY_Controller
         }
 
         return $posts;
+    }
+
+    private function _fallbackSocialPosts($profile, $limit = 6)
+    {
+        $company = trim((string) $profile->company_name);
+        if ($company === '') {
+            $company = 'your startup';
+        }
+        $idea = trim((string) $profile->idea_summary);
+        $items = [];
+        for ($i = 1; $i <= $limit; $i++) {
+            $caption = "Post {$i}: {$company} helps customers with {$idea}.";
+            $items[] = [
+                'caption' => $caption,
+                'image_prompt' => "Instagram square post concept {$i} for {$company}. Clean modern style. Topic: {$idea}."
+            ];
+        }
+        return $items;
+    }
+
+    private function _extractInstagramProfile($structured, $profile, $socialPosts)
+    {
+        $data = isset($structured['instagram_profile']) && is_array($structured['instagram_profile']) ? $structured['instagram_profile'] : [];
+        $company = trim((string) $profile->company_name);
+        $company = $company !== '' ? $company : 'hatchersfounder';
+
+        $username = isset($data['username']) ? trim((string) $data['username']) : '';
+        if ($username === '') {
+            $username = strtolower(preg_replace('/[^a-z0-9]+/i', '', $company));
+        }
+
+        $displayName = isset($data['display_name']) ? trim((string) $data['display_name']) : '';
+        if ($displayName === '') {
+            $displayName = $company;
+        }
+
+        $bio = isset($data['bio']) ? trim((string) $data['bio']) : '';
+        if ($bio === '') {
+            $bio = trim((string) $profile->idea_summary);
+        }
+
+        $website = isset($data['website']) ? trim((string) $data['website']) : 'https://hatchers.ai';
+        $followers = isset($data['followers']) ? (int) $data['followers'] : (1200 + (customCompute($socialPosts) * 50));
+        $following = isset($data['following']) ? (int) $data['following'] : 30;
+
+        return [
+            'username' => $username,
+            'display_name' => $displayName,
+            'bio' => $bio,
+            'website' => $website,
+            'followers' => $followers,
+            'following' => $following,
+            'posts' => customCompute($socialPosts)
+        ];
+    }
+
+    private function _extractFunnels($structured, $profile)
+    {
+        $raw = isset($structured['funnel_suggestions']) && is_array($structured['funnel_suggestions']) ? $structured['funnel_suggestions'] : [];
+        $mapped = [];
+        foreach ($raw as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+
+            $steps = [];
+            if (isset($row['steps']) && is_array($row['steps'])) {
+                foreach ($row['steps'] as $s) {
+                    $s = trim((string) $s);
+                    if ($s !== '') {
+                        $steps[] = $s;
+                    }
+                    if (count($steps) >= 4) {
+                        break;
+                    }
+                }
+            }
+
+            $mapped[] = [
+                'design_type' => isset($row['design_type']) ? trim((string) $row['design_type']) : 'funnel',
+                'title' => isset($row['title']) ? trim((string) $row['title']) : '',
+                'subtitle' => isset($row['subtitle']) ? trim((string) $row['subtitle']) : '',
+                'steps' => $steps,
+                'cta' => isset($row['cta']) ? trim((string) $row['cta']) : ''
+            ];
+            if (count($mapped) >= 3) {
+                break;
+            }
+        }
+
+        if (count($mapped) < 3) {
+            $company = trim((string) $profile->company_name);
+            if ($company === '') {
+                $company = 'Your Company';
+            }
+            $fallbacks = [
+                [
+                    'design_type' => 'awareness',
+                    'title' => 'Awareness Funnel',
+                    'subtitle' => "Reach the right audience for {$company}",
+                    'steps' => ['Big hook content', 'Lead magnet CTA', 'Social proof examples', 'Book strategy call'],
+                    'cta' => 'Get the free blueprint'
+                ],
+                [
+                    'design_type' => 'conversion',
+                    'title' => 'Conversion Funnel',
+                    'subtitle' => 'Turn warm leads into buyers',
+                    'steps' => ['Offer promise', 'Risk reversal', 'Urgency push', 'Direct purchase CTA'],
+                    'cta' => 'Claim your offer'
+                ],
+                [
+                    'design_type' => 'lead_capture',
+                    'title' => 'Lead Capture Funnel',
+                    'subtitle' => 'Capture and qualify quality leads',
+                    'steps' => ['Traffic campaign', 'Landing page', 'Qualification form', 'Follow-up sequence'],
+                    'cta' => 'Start lead capture'
+                ]
+            ];
+            foreach ($fallbacks as $f) {
+                if (count($mapped) >= 3) {
+                    break;
+                }
+                $mapped[] = $f;
+            }
+        }
+
+        return array_slice($mapped, 0, 3);
     }
 
     private function _generateSocialPostImages($apiKey, $socialPosts, $profile, $limit = 9)

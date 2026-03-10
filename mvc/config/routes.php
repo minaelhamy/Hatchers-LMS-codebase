@@ -25,4 +25,5 @@
     $route['hustler/chat'] = 'hustler/chat';
     $route['hustler/market-access'] = 'hustler/market_access';
     $route['hustler/generate-market-access'] = 'hustler/generate_market_access';
+    $route['hustler/restart-profile'] = 'hustler/restart_profile';
     $route['hustler/logout'] = 'hustler/logout';

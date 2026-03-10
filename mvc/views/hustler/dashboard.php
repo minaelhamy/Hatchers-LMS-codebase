@@ -51,6 +51,9 @@
                 <a href="#" class="disabled" title="<?=htmlspecialchars($marketAccessReason !== '' ? $marketAccessReason : 'Complete founder context and weekly plan first')?>">Market Access (Locked)</a>
             <?php } ?>
             <a href="<?=base_url('hustler/logout')?>">Log Out</a>
+            <form method="post" action="<?=base_url('hustler/restart-profile')?>" onsubmit="return confirm('Restart profile and erase all generated data?');">
+                <button class="hustler-nav-danger" type="submit">Restart Profile</button>
+            </form>
         </nav>
 
         <div class="hustler-sidebar-section">
