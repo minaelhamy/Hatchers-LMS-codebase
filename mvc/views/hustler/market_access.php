@@ -66,7 +66,7 @@
             <div class="hustler-generation-status" id="hustler-generation-status" style="display:none;">
                 <div class="hustler-generation-row">
                     <span class="hustler-spinner"></span>
-                    <span id="hustler-generation-label">Generating Instagram profile, 6 post visuals, and 3 funnel boards...</span>
+                    <span id="hustler-generation-label">Generating Instagram profile, 3 post visuals, and 3 funnel boards...</span>
                 </div>
                 <div class="hustler-progress-track">
                     <div class="hustler-progress-fill" id="hustler-progress-fill"></div>
@@ -103,7 +103,7 @@
                         <?php } ?>
                     </div>
                     <div class="hustler-instagram-stats">
-                        <div><strong id="ig-post-count"><?=customCompute($postImages) ? customCompute($postImages) : 6?></strong><span>Posts</span></div>
+                        <div><strong id="ig-post-count"><?=customCompute($postImages) ? customCompute($postImages) : 3?></strong><span>Posts</span></div>
                         <div><strong id="ig-followers"><?=htmlspecialchars((string) $igFollowers)?></strong><span>Followers</span></div>
                         <div><strong id="ig-following"><?=htmlspecialchars((string) $igFollowing)?></strong><span>Following</span></div>
                     </div>
@@ -129,7 +129,7 @@
                 </div>
 
                 <div class="hustler-instagram-post-grid" id="hustler-image-grid">
-                    <?php for ($i = 0; $i < 6; $i++) { ?>
+                    <?php for ($i = 0; $i < 3; $i++) { ?>
                         <?php
                             $img = isset($postImages[$i]['image_url']) ? (string) $postImages[$i]['image_url'] : '';
                         ?>
@@ -213,8 +213,8 @@
         }
 
         function renderImageGrid(images, logoUrl) {
-            images = Array.isArray(images) ? images.slice(0, 6) : [];
-            while (images.length < 6) {
+            images = Array.isArray(images) ? images.slice(0, 3) : [];
+            while (images.length < 3) {
                 images.push({ image_url: '' });
             }
 
@@ -227,7 +227,7 @@
             }).join('');
 
             $('#hustler-image-grid').html(html);
-            $('#ig-post-count').text(6);
+            $('#ig-post-count').text(3);
             if (logoUrl) {
                 $('.hustler-instagram-avatar').html('<img id="ig-avatar-img" src="' + escapeHtml(logoUrl) + '" alt="">');
             } else if (images[0] && images[0].image_url) {

@@ -22,6 +22,9 @@ class Hustler extends MY_Controller
     {
         parent::__construct();
         $this->load->database();
+        if (function_exists('session_status') && session_status() === PHP_SESSION_ACTIVE && function_exists('session_write_close')) {
+            @session_write_close();
+        }
         $this->load->library('session');
         $this->load->helper(['url', 'form']);
         $this->load->model('site_m');
@@ -261,7 +264,7 @@ class Hustler extends MY_Controller
 
             $focus = trim((string) $this->input->post('focus'));
             $settings = $this->hatcher_ai_settings_m->get_latest_settings();
-            $postCount = $this->_extractRequestedPostCount($focus, 6);
+            $postCount = $this->_extractRequestedPostCount($focus, 3);
 
             $payload = [
                 'model' => customCompute($settings) ? $settings->model : 'gpt-4o-mini',
@@ -297,7 +300,7 @@ class Hustler extends MY_Controller
                 $socialPosts = $this->_fallbackSocialPosts($profile, $postCount);
             }
             $this->lastImageError = '';
-            $postImages = $this->_generateSocialPostImages($apiKey, $socialPosts, $profile, 6);
+            $postImages = $this->_generateSocialPostImages($apiKey, $socialPosts, $profile, 3);
             if (!customCompute($postImages)) {
                 $this->_json([
                     'ok' => false,
@@ -606,7 +609,7 @@ class Hustler extends MY_Controller
             . "\nExisting founder context:\n" . json_encode($context);
     }
 
-    private function _buildMarketAccessPrompt($profile, $focus, $postCount = 6)
+    private function _buildMarketAccessPrompt($profile, $focus, $postCount = 3)
     {
         $context = [
             'founder_name' => (string) $profile->founder_name,
@@ -935,12 +938,12 @@ class Hustler extends MY_Controller
         return $text !== '' ? $text : $fallbackText;
     }
 
-    private function _extractRequestedPostCount($focus, $default = 30)
+    private function _extractRequestedPostCount($focus, $default = 3)
     {
         $count = (int) $default;
         if (preg_match('/\b([1-9][0-9]?)\s+(?:social\s+)?posts?\b/i', (string) $focus, $matches)) {
             $candidate = isset($matches[1]) ? (int) $matches[1] : $count;
-            if ($candidate >= 6 && $candidate <= 40) {
+            if ($candidate >= 3 && $candidate <= 20) {
                 $count = $candidate;
             }
         }
@@ -1222,24 +1225,28 @@ class Hustler extends MY_Controller
     {
         $data = isset($structured['instagram_profile']) && is_array($structured['instagram_profile']) ? $structured['instagram_profile'] : [];
         $company = trim((string) $profile->company_name);
-        $company = $company !== '' ? $company : 'hatchersfounder';
+        $company = $company !== '' ? $company : 'founderstartup';
 
-        $username = isset($data['username']) ? trim((string) $data['username']) : '';
-        if ($username === '') {
-            $username = strtolower(preg_replace('/[^a-z0-9]+/i', '', $company));
+        $derivedUsername = strtolower(preg_replace('/[^a-z0-9]+/i', '', $company));
+        if ($derivedUsername === '') {
+            $derivedUsername = 'founderstartup';
         }
+        $username = $derivedUsername;
 
-        $displayName = isset($data['display_name']) ? trim((string) $data['display_name']) : '';
-        if ($displayName === '') {
-            $displayName = $company;
-        }
+        $displayName = $company;
 
-        $bio = isset($data['bio']) ? trim((string) $data['bio']) : '';
+        $bio = trim((string) $profile->idea_summary);
         if ($bio === '') {
-            $bio = trim((string) $profile->idea_summary);
+            $bio = isset($data['bio']) ? trim((string) $data['bio']) : '';
+        }
+        if ($bio === '') {
+            $bio = 'Founder business profile.';
         }
 
-        $website = isset($data['website']) ? trim((string) $data['website']) : 'https://hatchers.ai';
+        $website = isset($data['website']) ? trim((string) $data['website']) : '';
+        if ($website === '' || stripos($website, 'hatchers.ai') !== false) {
+            $website = 'https://example.com';
+        }
         $followers = isset($data['followers']) ? (int) $data['followers'] : (1200 + (customCompute($socialPosts) * 50));
         $following = isset($data['following']) ? (int) $data['following'] : 30;
         $logo = isset($data['logo_url']) ? trim((string) $data['logo_url']) : '';
