@@ -74,7 +74,7 @@ class Hatchersadmin extends Admin_Controller
         }
         $mentors = $this->teacher_m->get_teacher();
 
-        $this->db->select('student.studentID, student.name, student.email, student.phone, student.photo');
+        $this->db->select('student.studentID, student.name, student.email, student.phone, student.photo, studentextend.remarks as company_brief');
         $this->db->from('student');
         $this->db->join('studentextend', 'studentextend.studentID = student.studentID', 'LEFT');
         $founders = $this->db->get()->result();
@@ -213,7 +213,7 @@ class Hatchersadmin extends Admin_Controller
 
     public function profiles()
     {
-        $this->db->select('student.studentID, student.name, student.email, student.phone, student.username, student.photo, student.classesID, student.sectionID, student.roll');
+        $this->db->select('student.studentID, student.name, student.email, student.phone, student.username, student.photo, student.classesID, student.sectionID, student.roll, studentextend.remarks as company_brief');
         $this->db->from('student');
         $this->db->join('studentextend', 'studentextend.studentID = student.studentID', 'LEFT');
         $founders = $this->db->get()->result();
@@ -256,7 +256,7 @@ class Hatchersadmin extends Admin_Controller
             redirect('hatchersadmin/profiles');
         }
 
-        $this->db->select('student.studentID, student.name, student.email, student.phone, student.username, student.photo, student.classesID, student.sectionID, student.roll, student.parentID, student.address, student.state, student.country, student.bloodgroup, student.religion, student.sex');
+        $this->db->select('student.studentID, student.name, student.email, student.phone, student.username, student.photo, student.classesID, student.sectionID, student.roll, student.parentID, student.address, student.state, student.country, student.bloodgroup, student.religion, student.sex, studentextend.remarks as company_brief');
         $this->db->from('student');
         $this->db->join('studentextend', 'studentextend.studentID = student.studentID', 'LEFT');
         $this->db->where('student.studentID', $founderID);
@@ -298,6 +298,7 @@ class Hatchersadmin extends Admin_Controller
         $country = trim((string) $this->input->post('country'));
         $religion = trim((string) $this->input->post('religion'));
         $bloodgroup = trim((string) $this->input->post('bloodgroup'));
+        $companyBrief = trim((string) $this->input->post('company_brief'));
 
         if ($name === '' || $username === '') {
             $this->session->set_flashdata('error', 'Please fill all required fields.');
@@ -351,6 +352,10 @@ class Hatchersadmin extends Admin_Controller
             'srsection' => $setSection,
             'srroll' => $roll
         ], ['srstudentID' => $founderID]);
+
+        $this->studentextend_m->update_studentextend_by_studentID([
+            'remarks' => $companyBrief
+        ], $founderID);
 
         if (!empty($founder->parentID)) {
             $this->parents_m->update_parents([
@@ -550,7 +555,7 @@ class Hatchersadmin extends Admin_Controller
 
     public function download_founder_template()
     {
-        $this->_download_csv('founders_template.csv', ['name', 'email', 'phone', 'username', 'password', 'registerNO', 'sex', 'dob', 'admission_date', 'address', 'state', 'country']);
+        $this->_download_csv('founders_template.csv', ['name', 'email', 'phone', 'username', 'password', 'registerNO', 'sex', 'dob', 'admission_date', 'address', 'state', 'country', 'company_brief']);
     }
 
     public function download_mentor_template()
@@ -675,7 +680,8 @@ class Hatchersadmin extends Admin_Controller
             'admission_date' => trim((string) ($row[8] ?? '')),
             'address' => trim((string) ($row[9] ?? '')),
             'state' => trim((string) ($row[10] ?? '')),
-            'country' => trim((string) ($row[11] ?? ''))
+            'country' => trim((string) ($row[11] ?? '')),
+            'company_brief' => trim((string) ($row[12] ?? ''))
         ];
 
         $errors = [];
@@ -743,6 +749,7 @@ class Hatchersadmin extends Admin_Controller
         $address = trim((string) ($row[9] ?? ''));
         $state = trim((string) ($row[10] ?? ''));
         $country = trim((string) ($row[11] ?? ''));
+        $companyBrief = trim((string) ($row[12] ?? ''));
 
         if ($name === '' || $username === '' || $password === '') {
             return ['ok' => false, 'message' => 'Missing required fields.'];
@@ -766,7 +773,8 @@ class Hatchersadmin extends Admin_Controller
             'admission_date' => $admissionDate,
             'address' => $address,
             'state' => $state,
-            'country' => $country
+            'country' => $country,
+            'company_brief' => $companyBrief
         ];
         return $this->_create_founder_record($payload);
     }
@@ -832,6 +840,7 @@ class Hatchersadmin extends Admin_Controller
         $country = trim((string) ($payload['country'] ?? ''));
         $religion = trim((string) ($payload['religion'] ?? ''));
         $bloodgroup = trim((string) ($payload['bloodgroup'] ?? ''));
+        $companyBrief = trim((string) ($payload['company_brief'] ?? ''));
 
         if ($name === '' || $username === '' || $password === '' || $classesID <= 0 || $sectionID <= 0) {
             return ['ok' => false, 'message' => 'Please fill all required fields.'];
@@ -915,7 +924,7 @@ class Hatchersadmin extends Admin_Controller
             'studentgroupID' => 0,
             'optionalsubjectID' => 0,
             'extracurricularactivities' => '',
-            'remarks' => ''
+            'remarks' => $companyBrief
         ]);
 
         return [

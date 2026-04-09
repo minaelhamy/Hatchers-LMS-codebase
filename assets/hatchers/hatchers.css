@@ -1326,8 +1326,8 @@ body {
 .hatchers-page-header h1,
 .hatchers-header h1 {
     margin: 0 0 6px;
-    font-size: 46px;
-    line-height: 1;
+    font-size: 21px;
+    line-height: 1.15;
     letter-spacing: -0.05em;
     color: #1d1d1d;
 }
@@ -1336,7 +1336,7 @@ body {
 .hatchers-header p {
     margin: 0;
     color: #726b61;
-    font-size: 18px;
+    font-size: 13px;
 }
 
 .hatchers-stats-grid,
@@ -1397,8 +1397,8 @@ body {
 }
 
 .hatchers-page-intro .title {
-    font-size: 30px;
-    line-height: 1.05;
+    font-size: 18px;
+    line-height: 1.2;
     letter-spacing: -0.04em;
     color: #1f1f1f;
     margin-bottom: 8px;
@@ -1474,8 +1474,8 @@ body {
 .hatchers-task-title,
 .hatchers-card-title,
 .hatchers-focus-card .title {
-    font-size: 28px;
-    line-height: 1.08;
+    font-size: 17px;
+    line-height: 1.25;
     letter-spacing: -0.04em;
     color: #1f1f1f;
     margin-bottom: 6px;
@@ -1509,7 +1509,7 @@ body {
 }
 
 .hatchers-stat-card .value {
-    font-size: 42px;
+    font-size: 20px;
     font-weight: 800;
     letter-spacing: -0.05em;
     color: #181818;
@@ -1544,7 +1544,8 @@ body {
 .hatchers-cta {
     background: linear-gradient(135deg, #d22a72 0%, #9f175f 100%);
     color: #fff;
-    padding: 12px 16px;
+    padding: 10px 14px;
+    font-size: 12px;
 }
 
 .hatchers-ghost-btn,
@@ -1552,6 +1553,7 @@ body {
     background: #f5efe5;
     color: #5f5649;
     padding: 10px 14px;
+    font-size: 12px;
 }
 
 .hatchers-chat-thread {
@@ -1678,7 +1680,7 @@ body {
 }
 
 .hatchers-tool-panel .title {
-    font-size: 24px;
+    font-size: 18px;
     line-height: 1.05;
     letter-spacing: -0.04em;
     margin-bottom: 8px;
@@ -1686,6 +1688,123 @@ body {
 
 .hatchers-tool-panel .copy {
     color: #746d64;
+}
+
+.hatchers-founder-stack {
+    display: grid;
+    gap: 18px;
+}
+
+.hatchers-card-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+}
+
+.hatchers-line-meta.accent {
+    color: #52a269;
+}
+
+.hatchers-ai-thread {
+    min-height: 180px;
+}
+
+.hatchers-ai-compose {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+}
+
+.hatchers-ai-compose input {
+    width: 100%;
+    border: 1px solid #ece3d6;
+    border-radius: 14px;
+    padding: 12px 14px;
+    background: #fff;
+}
+
+.hatchers-founder-card {
+    background: #fff;
+    border: 1px solid #efe8dd;
+    border-radius: 18px;
+    padding: 18px;
+    margin-bottom: 14px;
+}
+
+.hatchers-founder-card-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.hatchers-founder-progress {
+    font-size: 16px;
+    font-weight: 800;
+    color: #1f1f1f;
+}
+
+.hatchers-progress-bar {
+    margin: 12px 0 10px;
+    height: 8px;
+    border-radius: 999px;
+    background: #f1ece2;
+    overflow: hidden;
+}
+
+.hatchers-progress-bar span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(135deg, #d22a72 0%, #9f175f 100%);
+    border-radius: 999px;
+}
+
+.hatchers-founder-metrics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    color: #786f63;
+}
+
+.hatchers-founder-roster {
+    margin-bottom: 18px;
+}
+
+.hatchers-founder-roster-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+}
+
+.hatchers-founder-chip {
+    display: block;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid #efe8dd;
+    background: #fff;
+    text-decoration: none;
+    color: #1f1f1f;
+}
+
+.hatchers-founder-chip.is-active {
+    border-color: #e2bfd1;
+    background: #fcf4f8;
+}
+
+.hatchers-founder-chip .name {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.hatchers-founder-chip .meta {
+    display: block;
+    font-size: 12px;
+    color: #786f63;
 }
 
 .block-link {
@@ -1759,6 +1878,6 @@ body {
     .hatchers-line-title,
     .hatchers-task-title,
     .hatchers-card-title {
-        font-size: 32px;
+        font-size: 17px;
     }
 }

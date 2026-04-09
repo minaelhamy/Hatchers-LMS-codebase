@@ -46,7 +46,6 @@ class Hatchers_shell_m extends MY_Model
         if ((int) $usertypeID === 2) {
             return [
                 ['key' => 'home', 'label' => 'Home', 'icon' => 'fa-home', 'link' => 'dashboard/index'],
-                ['key' => 'launch_plan', 'label' => 'Launch Plan', 'icon' => 'fa-rocket', 'link' => 'launchplan/index'],
                 ['key' => 'learning', 'label' => 'Learning Plan', 'icon' => 'fa-book', 'link' => 'learningplan/index'],
                 ['key' => 'mentoring', 'label' => 'Mentoring', 'icon' => 'fa-comments-o', 'link' => 'mentoring/index'],
                 ['key' => 'ai_tools', 'label' => 'AI Tools', 'icon' => 'fa-magic', 'link' => 'aitools/index'],
@@ -124,22 +123,45 @@ class Hatchers_shell_m extends MY_Model
                 }
             }
         } elseif ((int) $usertypeID === 2) {
-            $assignments = $this->mentor_founder_m->get_order_by_mentor_founder([
-                'mentor_id' => $userID,
-                'status'    => 1
-            ]);
+            $meetings = $this->founder_meeting_m->get_order_by_founder_meeting(['mentor_id' => $userID]);
+            if (customCompute($meetings)) {
+                foreach ($meetings as $meeting) {
+                    if (!in_array((string) $meeting->request_status, ['requested', 'reschedule_requested'], true)) {
+                        continue;
+                    }
+                    $founder = $this->student_m->general_get_single_student(['studentID' => $meeting->founder_id]);
+                    if (!customCompute($founder)) {
+                        continue;
+                    }
+                    $items[] = [
+                        'title' => (string) $meeting->request_status === 'reschedule_requested' ? 'Reschedule request' : 'Meeting request',
+                        'body'  => $founder->name . ' • ' . (!empty($meeting->title) ? $meeting->title : 'Mentoring session'),
+                        'link'  => base_url('mentoring/index?founder_id=' . $founder->studentID)
+                    ];
+                    if (count($items) >= 6) {
+                        break;
+                    }
+                }
+            }
 
-            if (customCompute($assignments)) {
-                foreach ($assignments as $assignment) {
-                    $founder = $this->student_m->general_get_single_student(['studentID' => $assignment->founder_id]);
-                    if (customCompute($founder)) {
-                        $items[] = [
-                            'title' => 'Assigned founder',
-                            'body'  => $founder->name,
-                            'link'  => base_url('mentoring/index?founder_id=' . $founder->studentID)
-                        ];
-                        if (count($items) >= 6) {
-                            break;
+            if (count($items) < 6) {
+                $assignments = $this->mentor_founder_m->get_order_by_mentor_founder([
+                    'mentor_id' => $userID,
+                    'status'    => 1
+                ]);
+
+                if (customCompute($assignments)) {
+                    foreach ($assignments as $assignment) {
+                        $founder = $this->student_m->general_get_single_student(['studentID' => $assignment->founder_id]);
+                        if (customCompute($founder)) {
+                            $items[] = [
+                                'title' => 'Assigned founder',
+                                'body'  => $founder->name,
+                                'link'  => base_url('mentoring/index?founder_id=' . $founder->studentID)
+                            ];
+                            if (count($items) >= 6) {
+                                break;
+                            }
                         }
                     }
                 }

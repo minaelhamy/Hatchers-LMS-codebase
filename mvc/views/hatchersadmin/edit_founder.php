@@ -32,6 +32,7 @@
             <input type="text" name="address" value="<?=htmlspecialchars((string) $founder->address)?>" placeholder="Address">
             <input type="text" name="state" value="<?=htmlspecialchars((string) $founder->state)?>" placeholder="State">
             <input type="text" name="country" value="<?=htmlspecialchars((string) $founder->country)?>" placeholder="Country">
+            <textarea name="company_brief" placeholder="Company brief"><?=htmlspecialchars((string) $founder->company_brief)?></textarea>
             <button class="hatchers-cta" type="submit">Save Changes</button>
             <div class="hatchers-list-subtitle">Sprint and section are compatibility-only fields and are no longer part of the operational workflow.</div>
         </form>

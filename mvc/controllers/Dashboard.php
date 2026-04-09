@@ -443,64 +443,50 @@ class Dashboard extends Admin_Controller
                 ['label' => 'Lessons', 'value' => customCompute($learning) ? count($learning) : 0, 'copy' => 'Assigned learning sessions and resources.'],
             ];
 
-            if (customCompute($tasks)) {
-                foreach (array_slice($tasks, 0, 4) as $task) {
-                    $cards[] = [
-                        'title' => $task->title,
-                        'copy' => (string) $task->description,
-                        'action' => ((int) $task->status === 1) ? 'Completed' : 'Open launch plan',
-                        'link' => 'launchplan/index'
-                    ];
-                }
-            }
-
-            $spotlight = [
-                ['label' => 'Mentoring', 'title' => 'Chat and meetings', 'copy' => 'Request a session, message your mentor, and stay aligned.', 'action' => 'Open mentoring', 'link' => 'mentoring/index'],
-                ['label' => 'Learning', 'title' => 'Resource library', 'copy' => 'Watch lessons, open PDFs, and revisit founder resources.', 'action' => 'Open learning', 'link' => 'learningplan/index'],
-                ['label' => 'AI', 'title' => 'Hatchers AI assistant', 'copy' => 'Ask about your tasks, milestones, and startup challenges any time.', 'action' => 'Open AI tools', 'link' => 'aitools/index'],
-            ];
-
             $subheadline = 'Here is what is on for you this week.';
         } elseif ($usertypeID === 2) {
             $mentorData = isset($this->data['hatchers_mentor']) ? $this->data['hatchers_mentor'] : ['founders' => []];
             $founders = isset($mentorData['founders']) ? $mentorData['founders'] : [];
-            $meetings = $this->founder_meeting_m->get_order_by_founder_meeting(['mentor_id' => $userID]);
-            $pendingRequests = 0;
+            $founderSummaries = isset($mentorData['founder_summaries']) ? $mentorData['founder_summaries'] : [];
+            $meetings = isset($mentorData['upcoming_meetings']) ? $mentorData['upcoming_meetings'] : [];
+            $openTasks = isset($mentorData['open_tasks']) ? (int) $mentorData['open_tasks'] : 0;
+            $completedTasks = isset($mentorData['completed_tasks']) ? (int) $mentorData['completed_tasks'] : 0;
+            $pendingRequests = isset($mentorData['pending_requests']) ? (int) $mentorData['pending_requests'] : 0;
+            $activeMilestones = isset($mentorData['active_milestones']) ? (int) $mentorData['active_milestones'] : 0;
+
             if (customCompute($meetings)) {
                 foreach ($meetings as $meeting) {
-                    if (!empty($meeting->starts_at)) {
+                    if (!empty($meeting['starts_at'])) {
                         $calendarEvents[] = [
-                            'title' => !empty($meeting->title) ? $meeting->title : 'Mentoring session',
-                            'start' => $meeting->starts_at,
+                            'title' => !empty($meeting['title']) ? $meeting['title'] : 'Mentoring session',
+                            'start' => $meeting['starts_at'],
                         ];
-                    }
-                    if ((string) $meeting->request_status === 'requested') {
-                        $pendingRequests++;
                     }
                 }
             }
 
             $stats = [
                 ['label' => 'Assigned Founders', 'value' => customCompute($founders) ? count($founders) : 0, 'copy' => 'Founders currently under your guidance.'],
-                ['label' => 'Pending Requests', 'value' => $pendingRequests, 'copy' => 'Meeting requests waiting for your response.'],
-                ['label' => 'Scheduled Meetings', 'value' => customCompute($meetings) ? count($meetings) : 0, 'copy' => 'Mentoring sessions on the calendar.'],
+                ['label' => 'Open Tasks', 'value' => $openTasks, 'copy' => 'Weekly execution still in progress across your founders.'],
+                ['label' => 'Completed Tasks', 'value' => $completedTasks, 'copy' => 'Tasks already completed across your current founder portfolio.'],
             ];
 
-            if (customCompute($founders)) {
-                foreach (array_slice($founders, 0, 5) as $founder) {
+            if (customCompute($meetings)) {
+                foreach (array_slice($meetings, 0, 5) as $meeting) {
                     $cards[] = [
-                        'title' => $founder->name,
-                        'copy' => 'Review tasks, milestones, meetings, and messages for this founder.',
-                        'action' => 'Open workspace',
-                        'link' => 'mentoring/index?founder_id=' . $founder->studentID
+                        'title' => !empty($meeting['title']) ? $meeting['title'] : 'Mentoring session',
+                        'copy' => $meeting['founder_name'] . (!empty($meeting['request_status']) ? ' • ' . ucfirst($meeting['request_status']) : ''),
+                        'action' => !empty($meeting['starts_at']) ? date('M j, g:ia', strtotime($meeting['starts_at'])) : 'Calendar item',
+                        'link' => 'mentoring/index?founder_id=' . (int) $meeting['founder_id']
                     ];
                 }
             }
 
             $spotlight = [
-                ['label' => 'Launch Plan', 'title' => 'Guide weekly execution', 'copy' => 'Set clear tasks and milestones to keep founders moving.', 'action' => 'Open launch plan', 'link' => 'launchplan/index'],
+                ['label' => 'Execution', 'title' => 'Create tasks and milestones', 'copy' => 'Open a founder workspace to plan weekly work and keep momentum visible.', 'action' => 'Open mentoring', 'link' => 'mentoring/index'],
                 ['label' => 'Learning', 'title' => 'Assign lessons and resources', 'copy' => 'Upload PDFs, add YouTube links, and curate articles.', 'action' => 'Open learning', 'link' => 'learningplan/index'],
-                ['label' => 'Mentoring', 'title' => 'Keep communication smooth', 'copy' => 'Handle meeting requests and maintain the founder conversation.', 'action' => 'Open mentoring', 'link' => 'mentoring/index'],
+                ['label' => 'Requests', 'title' => 'Respond fast to founders', 'copy' => $pendingRequests > 0 ? $pendingRequests . ' meeting requests are waiting for a response.' : 'No pending meeting requests right now.', 'action' => 'Review requests', 'link' => 'mentoring/index'],
+                ['label' => 'Milestones', 'title' => 'Track longer-term progress', 'copy' => $activeMilestones . ' active milestones are currently shaping founder progress.', 'action' => 'View founder portfolio', 'link' => 'dashboard/index'],
             ];
 
             $subheadline = 'Your founder relationships, requests, and scheduled work at a glance.';
@@ -554,6 +540,8 @@ class Dashboard extends Admin_Controller
             'stats' => $stats,
             'cards' => $cards,
             'spotlight' => $spotlight,
+            'founder_summaries' => isset($founderSummaries) ? $founderSummaries : [],
+            'upcoming_meetings' => isset($meetings) ? $meetings : [],
         ];
         $this->data['hatchers_shell'] = $this->hatchers_shell_m->build('home', $calendarEvents);
     }
@@ -582,9 +570,20 @@ class Dashboard extends Admin_Controller
         $milestones = $this->milestone_meta_m->get_order_by_milestone_meta(['founder_id' => $founderID]);
 
         $milestoneMap = [];
+        $weeklyScopeTotal = 0;
+        $weeklyScopeDone = 0;
+        $weekStart = strtotime('monday this week');
+        $weekEnd = strtotime('sunday this week 23:59:59');
         if (customCompute($milestones)) {
             foreach ($milestones as $milestone) {
                 $milestoneMap[$milestone->milestone_meta_id] = $milestone;
+                $dueTs = !empty($milestone->due_date) ? strtotime($milestone->due_date) : 0;
+                if (($dueTs >= $weekStart && $dueTs <= $weekEnd) || empty($milestone->due_date)) {
+                    $weeklyScopeTotal++;
+                    if ((int) $milestone->status === 1) {
+                        $weeklyScopeDone++;
+                    }
+                }
             }
         }
 
@@ -615,16 +614,32 @@ class Dashboard extends Admin_Controller
                         'start' => $task->due_date
                     ];
                 }
+                $dueTs = !empty($task->due_date) ? strtotime($task->due_date) : 0;
+                if (($dueTs >= $weekStart && $dueTs <= $weekEnd) || empty($task->due_date)) {
+                    $weeklyScopeTotal++;
+                    if ((int) $task->status === 1) {
+                        $weeklyScopeDone++;
+                    }
+                }
             }
         }
+
+        $weeklyProgress = $weeklyScopeTotal > 0 ? (int) round(($weeklyScopeDone / $weeklyScopeTotal) * 100) : 0;
 
         $this->data['hatchers'] = [
             'mentor'          => $mentor,
             'meetings'        => $meetings,
             'learning'        => $learning,
             'tasks'           => $tasks,
+            'milestones'      => $milestones,
             'calendar_events' => $calendarEvents,
-            'milestone_map'   => $milestoneMap
+            'milestone_map'   => $milestoneMap,
+            'weekly_progress' => $weeklyProgress,
+            'weekly_scope_total' => $weeklyScopeTotal,
+            'weekly_scope_done' => $weeklyScopeDone,
+            'ai_history'      => $this->db->table_exists('hatcher_ai_conversations')
+                ? $this->db->order_by('hatcher_ai_conversation_id', 'ASC')->limit(12)->get_where('hatcher_ai_conversations', ['founder_id' => $founderID])->result()
+                : []
         ];
     }
 
@@ -642,9 +657,15 @@ class Dashboard extends Admin_Controller
         ]);
 
         $founders = [];
+        $founderSummaries = [];
+        $upcomingMeetings = [];
+        $openTasks = 0;
+        $completedTasks = 0;
+        $pendingRequests = 0;
+        $activeMilestones = 0;
         if (customCompute($assignments)) {
             foreach ($assignments as $assignment) {
-                $this->db->select('student.studentID, student.name, student.photo, student.email, student.phone, student.registerNO');
+                $this->db->select('student.studentID, student.name, student.photo, student.email, student.phone, student.registerNO, studentextend.remarks as company_brief');
                 $this->db->from('student');
                 $this->db->join('studentextend', 'studentextend.studentID = student.studentID', 'LEFT');
                 $this->db->where('student.studentID', $assignment->founder_id);
@@ -652,12 +673,93 @@ class Dashboard extends Admin_Controller
                 $student = $query->row();
                 if (customCompute($student)) {
                     $founders[] = $student;
+
+                    $tasks = $this->founder_task_m->get_order_by_founder_task(['founder_id' => $student->studentID]);
+                    $meetings = $this->founder_meeting_m->get_order_by_founder_meeting(['founder_id' => $student->studentID]);
+                    $milestones = $this->milestone_meta_m->get_order_by_milestone_meta(['founder_id' => $student->studentID]);
+                    $founderOpenTasks = 0;
+                    $founderCompletedTasks = 0;
+                    $founderOverdueTasks = 0;
+                    $nextMeeting = null;
+
+                    if (customCompute($tasks)) {
+                        foreach ($tasks as $task) {
+                            if ((int) $task->status === 1) {
+                                $founderCompletedTasks++;
+                                $completedTasks++;
+                            } else {
+                                $founderOpenTasks++;
+                                $openTasks++;
+                                if (!empty($task->due_date) && strtotime($task->due_date) < time()) {
+                                    $founderOverdueTasks++;
+                                }
+                            }
+                        }
+                    }
+
+                    if (customCompute($milestones)) {
+                        foreach ($milestones as $milestone) {
+                            if ((int) $milestone->status !== 1) {
+                                $activeMilestones++;
+                            }
+                        }
+                    }
+
+                    if (customCompute($meetings)) {
+                        foreach ($meetings as $meeting) {
+                            if ((string) $meeting->request_status === 'requested') {
+                                $pendingRequests++;
+                            }
+
+                            if (!empty($meeting->starts_at)) {
+                                $upcomingMeetings[] = [
+                                    'founder_id' => (int) $student->studentID,
+                                    'founder_name' => $student->name,
+                                    'title' => !empty($meeting->title) ? $meeting->title : 'Mentoring session',
+                                    'starts_at' => $meeting->starts_at,
+                                    'request_status' => $meeting->request_status,
+                                ];
+
+                                $meetingTs = strtotime($meeting->starts_at);
+                                if ($meetingTs && $meetingTs >= time() && ($nextMeeting === null || $meetingTs < strtotime((string) $nextMeeting->starts_at))) {
+                                    $nextMeeting = $meeting;
+                                }
+                            }
+                        }
+                    }
+
+                    $taskTotal = $founderOpenTasks + $founderCompletedTasks;
+                    $progressPercent = $taskTotal > 0 ? (int) round(($founderCompletedTasks / $taskTotal) * 100) : 0;
+                    $founderSummaries[] = [
+                        'founder_id' => (int) $student->studentID,
+                        'name' => $student->name,
+                        'email' => $student->email,
+                        'company_brief' => isset($student->company_brief) ? (string) $student->company_brief : '',
+                        'open_tasks' => $founderOpenTasks,
+                        'completed_tasks' => $founderCompletedTasks,
+                        'overdue_tasks' => $founderOverdueTasks,
+                        'milestones' => customCompute($milestones) ? count($milestones) : 0,
+                        'progress_percent' => $progressPercent,
+                        'next_meeting' => customCompute($nextMeeting) ? $nextMeeting->starts_at : null,
+                    ];
                 }
             }
         }
 
+        if (customCompute($upcomingMeetings)) {
+            usort($upcomingMeetings, function ($a, $b) {
+                return strtotime((string) $a['starts_at']) - strtotime((string) $b['starts_at']);
+            });
+        }
+
         $this->data['hatchers_mentor'] = [
-            'founders' => $founders
+            'founders' => $founders,
+            'founder_summaries' => $founderSummaries,
+            'upcoming_meetings' => array_slice($upcomingMeetings, 0, 8),
+            'open_tasks' => $openTasks,
+            'completed_tasks' => $completedTasks,
+            'pending_requests' => $pendingRequests,
+            'active_milestones' => $activeMilestones,
         ];
     }
 

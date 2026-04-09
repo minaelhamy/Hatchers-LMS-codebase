@@ -55,6 +55,9 @@
                             <div class="hatchers-list-title"><?=htmlspecialchars($founder->name)?></div>
                             <div class="hatchers-list-subtitle"><?=htmlspecialchars((string) $founder->email)?></div>
                             <div class="hatchers-list-meta"><?=$assigned ? 'Assigned' : 'Waiting for mentor assignment'?></div>
+                            <?php if (!empty($founder->company_brief)) { ?>
+                                <div class="hatchers-list-subtitle"><?=htmlspecialchars((string) $founder->company_brief)?></div>
+                            <?php } ?>
                         </div>
                         <div class="hatchers-form">
                             <select name="mentor_id">

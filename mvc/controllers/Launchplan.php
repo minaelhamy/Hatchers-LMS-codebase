@@ -52,6 +52,10 @@ class Launchplan extends Admin_Controller
 
         $milestoneMap = [];
         $calendar = [];
+        $weeklyScopeTotal = 0;
+        $weeklyScopeDone = 0;
+        $weekStart = strtotime('monday this week');
+        $weekEnd = strtotime('sunday this week 23:59:59');
         if (customCompute($milestones)) {
             foreach ($milestones as $milestone) {
                 $milestoneMap[$milestone->milestone_meta_id] = $milestone;
@@ -60,6 +64,14 @@ class Launchplan extends Admin_Controller
                         'title' => 'Milestone',
                         'start' => $milestone->due_date
                     ];
+                }
+
+                $dueTs = !empty($milestone->due_date) ? strtotime($milestone->due_date) : 0;
+                if (($dueTs >= $weekStart && $dueTs <= $weekEnd) || empty($milestone->due_date)) {
+                    $weeklyScopeTotal++;
+                    if ((int) $milestone->status === 1) {
+                        $weeklyScopeDone++;
+                    }
                 }
             }
         }
@@ -72,13 +84,26 @@ class Launchplan extends Admin_Controller
                         'start' => $task->due_date
                     ];
                 }
+
+                $dueTs = !empty($task->due_date) ? strtotime($task->due_date) : 0;
+                if (($dueTs >= $weekStart && $dueTs <= $weekEnd) || empty($task->due_date)) {
+                    $weeklyScopeTotal++;
+                    if ((int) $task->status === 1) {
+                        $weeklyScopeDone++;
+                    }
+                }
             }
         }
+
+        $weeklyProgress = $weeklyScopeTotal > 0 ? (int) round(($weeklyScopeDone / $weeklyScopeTotal) * 100) : 0;
 
         $this->data['founder'] = $founder;
         $this->data['tasks'] = $tasks;
         $this->data['milestones'] = $milestones;
         $this->data['milestoneMap'] = $milestoneMap;
+        $this->data['weeklyProgress'] = $weeklyProgress;
+        $this->data['weeklyScopeTotal'] = $weeklyScopeTotal;
+        $this->data['weeklyScopeDone'] = $weeklyScopeDone;
         $this->data['hatchers_shell'] = $this->hatchers_shell_m->build('launch_plan', $calendar, [
             'founder' => $founder
         ]);
@@ -107,6 +132,26 @@ class Launchplan extends Admin_Controller
         ];
 
         $this->founder_task_m->update_founder_task($data, $taskID);
+        redirect('launchplan/index' . ($this->input->get('founder_id') ? '?founder_id=' . (int) $this->input->get('founder_id') : ''));
+    }
+
+    public function toggle_milestone($milestoneID = 0)
+    {
+        $milestoneID = (int) $milestoneID;
+        if ($milestoneID <= 0) {
+            redirect('launchplan/index');
+        }
+
+        $milestone = $this->milestone_meta_m->get_single_milestone_meta(['milestone_meta_id' => $milestoneID]);
+        if (!customCompute($milestone) || !$this->_canAccessFounder((int) $milestone->founder_id)) {
+            show_404();
+        }
+
+        $newStatus = ((int) $milestone->status === 1) ? 0 : 1;
+        $this->milestone_meta_m->update_milestone_meta([
+            'status' => $newStatus
+        ], $milestoneID);
+
         redirect('launchplan/index' . ($this->input->get('founder_id') ? '?founder_id=' . (int) $this->input->get('founder_id') : ''));
     }
 

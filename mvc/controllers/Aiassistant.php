@@ -184,7 +184,7 @@ class Aiassistant extends Admin_Controller
             }
         }
 
-        $this->db->select('student.studentID, student.name, student.email, student.phone');
+        $this->db->select('student.studentID, student.name, student.email, student.phone, studentextend.remarks');
         $this->db->from('student');
         $this->db->join('studentextend', 'studentextend.studentID = student.studentID', 'LEFT');
         $this->db->where('student.studentID', $founderID);
@@ -221,7 +221,8 @@ class Aiassistant extends Admin_Controller
             'founder' => [
                 'id' => $founderID,
                 'name' => customCompute($founder) ? $founder->name : '',
-                'email' => customCompute($founder) ? $founder->email : ''
+                'email' => customCompute($founder) ? $founder->email : '',
+                'company_brief' => customCompute($founder) ? (string) $founder->remarks : ''
             ],
             'mentor' => customCompute($mentor) ? $mentor->name : '',
             'tasks' => $this->_mapTasks($tasks),

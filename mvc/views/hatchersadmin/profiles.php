@@ -38,6 +38,7 @@
                 <input type="text" name="address" placeholder="Address">
                 <input type="text" name="state" placeholder="State">
                 <input type="text" name="country" placeholder="Country">
+                <textarea name="company_brief" placeholder="Company brief: what the founder is building, their current stage, and main challenge"></textarea>
                 <button class="hatchers-cta" type="submit">Create Founder</button>
                 <div class="hatchers-list-subtitle">Compatibility sprint/section values are handled behind the scenes and hidden from Hatchers operations.</div>
             </form>
@@ -76,7 +77,7 @@
             <input type="file" name="csv_file" accept=".csv" required>
             <button class="hatchers-cta" type="submit">Preview Import</button>
             <div class="hatchers-list-subtitle">
-                Founder CSV columns: name, email, phone, username, password, registerNO, sex, dob, admission_date, address, state, country
+                Founder CSV columns: name, email, phone, username, password, registerNO, sex, dob, admission_date, address, state, country, company_brief
             </div>
             <div class="hatchers-list-subtitle">
                 Mentor CSV columns: name, email, phone, username, password, sex, dob, designation
@@ -98,6 +99,9 @@
                         <div>
                             <div class="hatchers-list-title"><?=htmlspecialchars($founder->name)?></div>
                             <div class="hatchers-list-subtitle"><?=htmlspecialchars((string) $founder->email)?> • <?=htmlspecialchars((string) $founder->username)?></div>
+                            <?php if (!empty($founder->company_brief)) { ?>
+                                <div class="hatchers-list-subtitle"><?=htmlspecialchars((string) $founder->company_brief)?></div>
+                            <?php } ?>
                         </div>
                         <div class="hatchers-form">
                             <a class="hatchers-ghost-btn" href="<?=base_url('hatchersadmin/edit_founder/'.$founder->studentID)?>">Edit</a>
