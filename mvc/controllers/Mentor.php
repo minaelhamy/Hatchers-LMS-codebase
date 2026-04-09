@@ -55,25 +55,7 @@ class Mentor extends Admin_Controller
         if (!customCompute($assignment)) {
             show_404();
         }
-
-        $this->db->select('student.studentID, student.name, student.photo, student.email, student.phone, student.registerNO');
-        $this->db->from('student');
-        $this->db->join('studentextend', 'studentextend.studentID = student.studentID', 'LEFT');
-        $this->db->where('student.studentID', $founderID);
-        $founder = $this->db->get()->row();
-
-        $meetings = $this->founder_meeting_m->get_order_by_founder_meeting(['founder_id' => $founderID]);
-        $learning = $this->founder_learning_m->get_order_by_founder_learning(['founder_id' => $founderID]);
-        $tasks    = $this->founder_task_m->get_order_by_founder_task(['founder_id' => $founderID]);
-        $milestones = $this->milestone_meta_m->get_order_by_milestone_meta(['founder_id' => $founderID]);
-
-        $this->data['founder'] = $founder;
-        $this->data['meetings'] = $meetings;
-        $this->data['learning'] = $learning;
-        $this->data['tasks'] = $tasks;
-        $this->data['milestones'] = $milestones;
-        $this->data["subview"] = "mentor/view";
-        $this->load->view('_layout_main', $this->data);
+        redirect('mentoring/index?founder_id=' . $founderID);
     }
 
     public function add_meeting()
@@ -108,7 +90,7 @@ class Mentor extends Admin_Controller
             'notes' => $notes
         ]);
 
-        redirect('mentor/view/' . $founderID);
+        redirect('mentoring/index?founder_id=' . $founderID);
     }
 
     public function add_learning()
@@ -141,7 +123,7 @@ class Mentor extends Admin_Controller
             'status' => 0
         ]);
 
-        redirect('mentor/view/' . $founderID);
+        redirect('learningplan/index?founder_id=' . $founderID);
     }
 
     public function add_task()
@@ -176,7 +158,7 @@ class Mentor extends Admin_Controller
             'status' => 0
         ]);
 
-        redirect('mentor/view/' . $founderID);
+        redirect('launchplan/index?founder_id=' . $founderID);
     }
 
     public function add_milestone()
@@ -212,6 +194,6 @@ class Mentor extends Admin_Controller
             'notes' => $notes
         ]);
 
-        redirect('mentor/view/' . $founderID);
+        redirect('launchplan/index?founder_id=' . $founderID);
     }
 }

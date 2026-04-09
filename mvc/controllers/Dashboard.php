@@ -47,6 +47,7 @@ class Dashboard extends Admin_Controller
     public $founder_learning_m;
     public $milestone_meta_m;
     public $input;
+    public $hatchers_shell_m;
     /*
         | -----------------------------------------------------
         | PRODUCT NAME: 	INILABS SCHOOL MANAGEMENT SYSTEM
@@ -100,6 +101,7 @@ class Dashboard extends Admin_Controller
         $this->load->model('founder_meeting_m');
         $this->load->model('founder_learning_m');
         $this->load->model('milestone_meta_m');
+        $this->load->model('hatchers_shell_m');
         $language = $this->session->userdata('lang');
         $this->lang->load('dashboard', $language);
 
@@ -380,6 +382,15 @@ class Dashboard extends Admin_Controller
             ]
         ];
 
+        if (in_array((int) $this->session->userdata('usertypeID'), [1, 2, 3], true)) {
+            $this->_hatchersFounderDashboard();
+            $this->_hatchersMentorDashboard();
+            $this->_hatchersHome();
+            $this->data["subview"] = "dashboard/hatchers_home";
+            $this->load->view('_layout_hatchers', $this->data);
+            return;
+        }
+
         $this->_tails();
         $this->_attendanceGraph();
         $this->_incomeExpenseGraph();
@@ -396,6 +407,155 @@ class Dashboard extends Admin_Controller
 
         $this->data["subview"] = "dashboard/index";
         $this->load->view('_layout_main', $this->data);
+    }
+
+    private function _hatchersHome()
+    {
+        $usertypeID = (int) $this->session->userdata('usertypeID');
+        $userID = (int) $this->session->userdata('loginuserID');
+        $name = (string) $this->session->userdata('name');
+        $calendarEvents = [];
+        $stats = [];
+        $cards = [];
+        $spotlight = [];
+        $headline = 'Welcome back ' . $name;
+        $subheadline = 'Here is what is moving right now.';
+
+        if ($usertypeID === 3) {
+            $hatchersData = isset($this->data['hatchers']) ? $this->data['hatchers'] : [];
+            $meetings = isset($hatchersData['meetings']) ? $hatchersData['meetings'] : [];
+            $learning = isset($hatchersData['learning']) ? $hatchersData['learning'] : [];
+            $tasks = isset($hatchersData['tasks']) ? $hatchersData['tasks'] : [];
+            $calendarEvents = isset($hatchersData['calendar_events']) ? $hatchersData['calendar_events'] : [];
+            $openTasks = 0;
+
+            if (customCompute($tasks)) {
+                foreach ($tasks as $task) {
+                    if ((int) $task->status === 0) {
+                        $openTasks++;
+                    }
+                }
+            }
+
+            $stats = [
+                ['label' => 'Open Tasks', 'value' => $openTasks, 'copy' => 'Clear weekly action items with your mentor.'],
+                ['label' => 'Meetings', 'value' => customCompute($meetings) ? count($meetings) : 0, 'copy' => 'Upcoming mentoring sessions on your calendar.'],
+                ['label' => 'Lessons', 'value' => customCompute($learning) ? count($learning) : 0, 'copy' => 'Assigned learning sessions and resources.'],
+            ];
+
+            if (customCompute($tasks)) {
+                foreach (array_slice($tasks, 0, 4) as $task) {
+                    $cards[] = [
+                        'title' => $task->title,
+                        'copy' => (string) $task->description,
+                        'action' => ((int) $task->status === 1) ? 'Completed' : 'Open launch plan',
+                        'link' => 'launchplan/index'
+                    ];
+                }
+            }
+
+            $spotlight = [
+                ['label' => 'Mentoring', 'title' => 'Chat and meetings', 'copy' => 'Request a session, message your mentor, and stay aligned.', 'action' => 'Open mentoring', 'link' => 'mentoring/index'],
+                ['label' => 'Learning', 'title' => 'Resource library', 'copy' => 'Watch lessons, open PDFs, and revisit founder resources.', 'action' => 'Open learning', 'link' => 'learningplan/index'],
+                ['label' => 'AI', 'title' => 'Hatchers AI assistant', 'copy' => 'Ask about your tasks, milestones, and startup challenges any time.', 'action' => 'Open AI tools', 'link' => 'aitools/index'],
+            ];
+
+            $subheadline = 'Here is what is on for you this week.';
+        } elseif ($usertypeID === 2) {
+            $mentorData = isset($this->data['hatchers_mentor']) ? $this->data['hatchers_mentor'] : ['founders' => []];
+            $founders = isset($mentorData['founders']) ? $mentorData['founders'] : [];
+            $meetings = $this->founder_meeting_m->get_order_by_founder_meeting(['mentor_id' => $userID]);
+            $pendingRequests = 0;
+            if (customCompute($meetings)) {
+                foreach ($meetings as $meeting) {
+                    if (!empty($meeting->starts_at)) {
+                        $calendarEvents[] = [
+                            'title' => !empty($meeting->title) ? $meeting->title : 'Mentoring session',
+                            'start' => $meeting->starts_at,
+                        ];
+                    }
+                    if ((string) $meeting->request_status === 'requested') {
+                        $pendingRequests++;
+                    }
+                }
+            }
+
+            $stats = [
+                ['label' => 'Assigned Founders', 'value' => customCompute($founders) ? count($founders) : 0, 'copy' => 'Founders currently under your guidance.'],
+                ['label' => 'Pending Requests', 'value' => $pendingRequests, 'copy' => 'Meeting requests waiting for your response.'],
+                ['label' => 'Scheduled Meetings', 'value' => customCompute($meetings) ? count($meetings) : 0, 'copy' => 'Mentoring sessions on the calendar.'],
+            ];
+
+            if (customCompute($founders)) {
+                foreach (array_slice($founders, 0, 5) as $founder) {
+                    $cards[] = [
+                        'title' => $founder->name,
+                        'copy' => 'Review tasks, milestones, meetings, and messages for this founder.',
+                        'action' => 'Open workspace',
+                        'link' => 'mentoring/index?founder_id=' . $founder->studentID
+                    ];
+                }
+            }
+
+            $spotlight = [
+                ['label' => 'Launch Plan', 'title' => 'Guide weekly execution', 'copy' => 'Set clear tasks and milestones to keep founders moving.', 'action' => 'Open launch plan', 'link' => 'launchplan/index'],
+                ['label' => 'Learning', 'title' => 'Assign lessons and resources', 'copy' => 'Upload PDFs, add YouTube links, and curate articles.', 'action' => 'Open learning', 'link' => 'learningplan/index'],
+                ['label' => 'Mentoring', 'title' => 'Keep communication smooth', 'copy' => 'Handle meeting requests and maintain the founder conversation.', 'action' => 'Open mentoring', 'link' => 'mentoring/index'],
+            ];
+
+            $subheadline = 'Your founder relationships, requests, and scheduled work at a glance.';
+        } elseif ($usertypeID === 1) {
+            $founders = $this->student_m->get_order_by_student();
+            $mentors = $this->teacher_m->get_teacher();
+            $assignments = $this->mentor_founder_m->get_order_by_mentor_founder(['status' => 1]);
+            $meetings = $this->db->table_exists('founder_meetings') ? $this->founder_meeting_m->get_order_by_founder_meeting() : [];
+
+            if (customCompute($meetings)) {
+                foreach (array_slice($meetings, 0, 20) as $meeting) {
+                    if (!empty($meeting->starts_at)) {
+                        $calendarEvents[] = [
+                            'title' => !empty($meeting->title) ? $meeting->title : 'Mentoring session',
+                            'start' => $meeting->starts_at,
+                        ];
+                    }
+                }
+            }
+
+            $stats = [
+                ['label' => 'Founders', 'value' => customCompute($founders) ? count($founders) : 0, 'copy' => 'Active founder accounts in the LMS.'],
+                ['label' => 'Mentors', 'value' => customCompute($mentors) ? count($mentors) : 0, 'copy' => 'Mentors available to guide founders.'],
+                ['label' => 'Assignments', 'value' => customCompute($assignments) ? count($assignments) : 0, 'copy' => 'Active founder-to-mentor relationships.'],
+            ];
+
+            if (customCompute($founders)) {
+                foreach (array_slice($founders, 0, 5) as $founder) {
+                    $cards[] = [
+                        'title' => $founder->name,
+                        'copy' => !empty($founder->email) ? $founder->email : 'Founder account ready for review.',
+                        'action' => 'Manage profile',
+                        'link' => 'hatchersadmin/edit_founder/' . $founder->studentID
+                    ];
+                }
+            }
+
+            $spotlight = [
+                ['label' => 'Onboarding', 'title' => 'Create founder access', 'copy' => 'Create founder and mentor accounts without school-era fields.', 'action' => 'Open profiles', 'link' => 'hatchersadmin/profiles'],
+                ['label' => 'Assignments', 'title' => 'Match founders to mentors', 'copy' => 'Control who guides whom across the full six-month journey.', 'action' => 'Open assignments', 'link' => 'hatchersadmin/assignments'],
+                ['label' => 'AI', 'title' => 'Configure the assistant', 'copy' => 'Manage OpenAI prompts and keep AI aligned with mentor guidance.', 'action' => 'Open AI settings', 'link' => 'hatchersadmin/ai'],
+            ];
+
+            $subheadline = 'Run onboarding, assignments, and AI configuration from one control surface.';
+        }
+
+        $this->data['hatchers_home'] = [
+            'role' => ($usertypeID === 1 ? 'admin' : ($usertypeID === 2 ? 'mentor' : 'founder')),
+            'headline' => $headline,
+            'subheadline' => $subheadline,
+            'stats' => $stats,
+            'cards' => $cards,
+            'spotlight' => $spotlight,
+        ];
+        $this->data['hatchers_shell'] = $this->hatchers_shell_m->build('home', $calendarEvents);
     }
 
     private function _hatchersFounderDashboard()

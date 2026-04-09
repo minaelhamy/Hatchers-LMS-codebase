@@ -18,6 +18,7 @@ class Aiassistant extends Admin_Controller
     public $founder_learning_m;
     public $milestone_meta_m;
     public $teacher_m;
+    public $hatchers_message_m;
 
     public function __construct()
     {
@@ -31,6 +32,7 @@ class Aiassistant extends Admin_Controller
         $this->load->model('founder_learning_m');
         $this->load->model('milestone_meta_m');
         $this->load->model('teacher_m');
+        $this->load->model('hatchers_message_m');
     }
 
     public function chat()
@@ -207,6 +209,13 @@ class Aiassistant extends Admin_Controller
             ->get_where('hatcher_ai_conversations', ['founder_id' => $founderID])
             ->result();
         $recentChats = array_reverse($recentChats);
+        $mentorMessages = [];
+        if (customCompute($mentorAssignment) && $this->db->table_exists('hatchers_messages')) {
+            $mentorMessages = $this->hatchers_message_m->get_thread($founderID, $mentorAssignment->mentor_id);
+            if (customCompute($mentorMessages)) {
+                $mentorMessages = array_slice($mentorMessages, -8);
+            }
+        }
 
         $summaryInput = [
             'founder' => [
@@ -219,7 +228,8 @@ class Aiassistant extends Admin_Controller
             'milestones' => $this->_mapMilestones($milestones),
             'learning' => $this->_mapLearning($learning),
             'meetings' => $this->_mapMeetings($meetings),
-            'recent_conversation' => $this->_mapConversation($recentChats)
+            'recent_conversation' => $this->_mapConversation($recentChats),
+            'mentor_messages' => $this->_mapConversation($mentorMessages)
         ];
 
         $payload = [

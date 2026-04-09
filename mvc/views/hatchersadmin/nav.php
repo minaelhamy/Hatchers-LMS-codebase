@@ -5,8 +5,8 @@
 <div class="hatchers-dashboard hatchers-mentor-detail">
     <div class="hatchers-header">
         <div>
-            <h1>Navigation Manager</h1>
-            <p>Control left and right navigation items for founders.</p>
+            <h1>Tool Directory</h1>
+            <p>Manage the external AI and execution tools that appear in the right rail and on the AI Tools page.</p>
         </div>
         <div class="hatchers-header-actions">
             <a class="hatchers-ghost-btn" href="<?=base_url('hatchersadmin/assignments')?>">Assignments</a>
@@ -15,28 +15,31 @@
         </div>
     </div>
 
+    <div class="hatchers-two-column">
     <div class="hatchers-detail-section">
+        <div class="hatchers-page-intro">
+            <div class="eyebrow">Founder experience</div>
+            <div class="title">Keep navigation focused</div>
+            <div class="copy">Only founder-relevant product tools should appear here: Atlas, Servio, Bazaar, landing pages, automation tools, CRM, and similar execution links.</div>
+        </div>
         <form class="hatchers-form" method="post" action="<?=base_url('hatchersadmin/nav_save')?>">
-            <div class="hatchers-form-title">Add item</div>
+            <div class="hatchers-form-title">Add tool</div>
             <input type="hidden" name="hatchers_nav_item_id" value="0">
             <input type="text" name="label" placeholder="Label" required>
             <input type="text" name="icon" placeholder="Font Awesome icon (e.g., fa-home)">
-            <input type="text" name="link" placeholder="Link (e.g., dashboard/index)">
-            <select name="location">
-                <option value="left">Left navigation</option>
-                <option value="right_ai">Right AI tools</option>
-            </select>
+            <input type="text" name="link" placeholder="Internal route or full https:// URL">
+            <input type="hidden" name="location" value="right_ai">
             <input type="number" name="sort_order" placeholder="Sort order" value="1">
             <select name="active">
                 <option value="1">Active</option>
                 <option value="0">Hidden</option>
             </select>
-            <button class="hatchers-cta" type="submit">Add item</button>
+            <button class="hatchers-cta" type="submit">Add tool</button>
         </form>
     </div>
 
     <div class="hatchers-detail-section">
-        <div class="hatchers-section-title">Current items</div>
+        <div class="hatchers-section-title">Current tools</div>
         <div class="hatchers-list">
             <?php if (customCompute($nav_items)) { ?>
                 <?php foreach ($nav_items as $item) { ?>
@@ -46,10 +49,7 @@
                             <input type="text" name="label" value="<?=htmlspecialchars($item->label)?>" required>
                             <input type="text" name="icon" value="<?=htmlspecialchars((string) $item->icon)?>">
                             <input type="text" name="link" value="<?=htmlspecialchars((string) $item->link)?>">
-                            <select name="location">
-                                <option value="left" <?=$item->location == 'left' ? 'selected' : ''?>>Left navigation</option>
-                                <option value="right_ai" <?=$item->location == 'right_ai' ? 'selected' : ''?>>Right AI tools</option>
-                            </select>
+                            <input type="hidden" name="location" value="right_ai">
                             <input type="number" name="sort_order" value="<?=$item->sort_order?>">
                             <select name="active">
                                 <option value="1" <?=$item->active ? 'selected' : ''?>>Active</option>
@@ -64,10 +64,11 @@
                 <?php } ?>
             <?php } else { ?>
                 <div class="hatchers-empty">
-                    <div class="hatchers-empty-title">No items yet</div>
-                    <div class="hatchers-empty-subtitle">Add your first navigation item above.</div>
+                    <div class="hatchers-empty-title">No tools yet</div>
+                    <div class="hatchers-empty-subtitle">Add your first tool above.</div>
                 </div>
             <?php } ?>
         </div>
+    </div>
     </div>
 </div>

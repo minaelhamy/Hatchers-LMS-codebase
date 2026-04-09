@@ -14,6 +14,11 @@
     </div>
 
     <div class="hatchers-detail-section">
+        <div class="hatchers-page-intro">
+            <div class="eyebrow">Mentor profile</div>
+            <div class="title"><?=htmlspecialchars($mentor->name)?></div>
+            <div class="copy">This profile appears across mentoring, meetings, and founder-facing support moments.</div>
+        </div>
         <form class="hatchers-form" method="post" action="<?=base_url('hatchersadmin/update_mentor/'.$mentor->teacherID)?>">
             <input type="text" name="name" value="<?=htmlspecialchars($mentor->name)?>" required>
             <input type="email" name="email" value="<?=htmlspecialchars((string) $mentor->email)?>" placeholder="Email">
@@ -34,4 +39,3 @@
         </form>
     </div>
 </div>
-

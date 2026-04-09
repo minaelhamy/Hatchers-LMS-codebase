@@ -25,23 +25,6 @@
                 <input type="text" name="username" placeholder="Username" required>
                 <input type="password" name="password" placeholder="Password" required>
                 <input type="text" name="registerNO" placeholder="Registration # (optional)">
-                <input type="text" name="roll" placeholder="Roll (required)" required>
-                <select name="classesID" required>
-                    <option value="">Select Sprint</option>
-                    <?php if (customCompute($classes)) { ?>
-                        <?php foreach ($classes as $class) { ?>
-                            <option value="<?=$class->classesID?>"><?=htmlspecialchars($class->classes)?></option>
-                        <?php } ?>
-                    <?php } ?>
-                </select>
-                <select name="sectionID" required>
-                    <option value="">Select Section</option>
-                    <?php if (customCompute($sections)) { ?>
-                        <?php foreach ($sections as $section) { ?>
-                            <option value="<?=$section->sectionID?>"><?=htmlspecialchars($section->section)?></option>
-                        <?php } ?>
-                    <?php } ?>
-                </select>
                 <select name="sex" required>
                     <option value="">Sex</option>
                     <option value="Male">Male</option>
@@ -56,7 +39,7 @@
                 <input type="text" name="state" placeholder="State">
                 <input type="text" name="country" placeholder="Country">
                 <button class="hatchers-cta" type="submit">Create Founder</button>
-                <div class="hatchers-list-subtitle">A guardian account is auto-created with username suffix `_g`.</div>
+                <div class="hatchers-list-subtitle">Compatibility sprint/section values are handled behind the scenes and hidden from Hatchers operations.</div>
             </form>
         </div>
 
@@ -93,7 +76,7 @@
             <input type="file" name="csv_file" accept=".csv" required>
             <button class="hatchers-cta" type="submit">Preview Import</button>
             <div class="hatchers-list-subtitle">
-                Founder CSV columns: name, email, phone, username, password, classesID, sectionID, roll
+                Founder CSV columns: name, email, phone, username, password, registerNO, sex, dob, admission_date, address, state, country
             </div>
             <div class="hatchers-list-subtitle">
                 Mentor CSV columns: name, email, phone, username, password, sex, dob, designation

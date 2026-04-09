@@ -16,7 +16,7 @@
     <div class="hatchers-header">
         <div>
             <h1>AI Settings</h1>
-            <p>Control the assistant behavior and the API connection.</p>
+            <p>Configure the OpenAI-powered assistant that supports founders using mentor context, tasks, meetings, and messages.</p>
         </div>
         <div class="hatchers-header-actions">
             <a class="hatchers-ghost-btn" href="<?=base_url('hatchersadmin/assignments')?>">Assignments</a>
@@ -25,14 +25,28 @@
         </div>
     </div>
 
+    <div class="hatchers-two-column">
+    <div class="hatchers-detail-section">
+        <div class="hatchers-page-intro">
+            <div class="eyebrow">AI provider</div>
+            <div class="title">OpenAI is the system default</div>
+            <div class="copy">The API key is loaded from <code>OPENAI_API_KEY</code>. Prompts are stored here, but secrets stay on the server.</div>
+        </div>
+
+        <div class="hatchers-focus-card">
+            <div class="eyebrow">Current model</div>
+            <div class="title"><?=htmlspecialchars((string) $aiSettings->model)?></div>
+            <div class="copy">Keep responses practical, responsive, and grounded in the founder’s actual mentoring context.</div>
+        </div>
+
+        <div class="hatchers-focus-card">
+            <div class="eyebrow">Context sources</div>
+            <div class="copy">Founder tasks, milestones, lessons, meetings, assignment data, AI chat history, and mentor-founder messages.</div>
+        </div>
+    </div>
+
     <div class="hatchers-detail-section">
         <form class="hatchers-form" method="post" action="<?=base_url('hatchersadmin/ai_save')?>">
-            <div class="hatchers-form-title">OpenAI API Key</div>
-            <div class="hatchers-list-subtitle">
-                The API key is loaded from the server environment variable <code>OPENAI_API_KEY</code>.
-                For security, it is not stored in the database.
-            </div>
-
             <div class="hatchers-form-title">System Prompt</div>
             <textarea name="system_prompt" required><?=htmlspecialchars((string) $aiSettings->system_prompt)?></textarea>
 
@@ -50,5 +64,6 @@
 
             <button class="hatchers-cta" type="submit">Save AI Settings</button>
         </form>
+    </div>
     </div>
 </div>

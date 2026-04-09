@@ -20,27 +20,7 @@
             <input type="text" name="phone" value="<?=htmlspecialchars((string) $founder->phone)?>" placeholder="Phone">
             <input type="text" name="username" value="<?=htmlspecialchars($founder->username)?>" required>
             <input type="password" name="password" placeholder="New password (leave blank to keep)">
-            <input type="text" name="roll" value="<?=htmlspecialchars((string) $founder->roll)?>" required>
-            <select name="classesID" required>
-                <option value="">Select Sprint</option>
-                <?php if (customCompute($classes)) { ?>
-                    <?php foreach ($classes as $class) { ?>
-                        <option value="<?=$class->classesID?>" <?=$founder->classesID == $class->classesID ? 'selected' : ''?>>
-                            <?=htmlspecialchars($class->classes)?>
-                        </option>
-                    <?php } ?>
-                <?php } ?>
-            </select>
-            <select name="sectionID" required>
-                <option value="">Select Section</option>
-                <?php if (customCompute($sections)) { ?>
-                    <?php foreach ($sections as $section) { ?>
-                        <option value="<?=$section->sectionID?>" <?=$founder->sectionID == $section->sectionID ? 'selected' : ''?>>
-                            <?=htmlspecialchars($section->section)?>
-                        </option>
-                    <?php } ?>
-                <?php } ?>
-            </select>
+            <input type="hidden" name="roll" value="<?=htmlspecialchars((string) $founder->roll)?>">
             <select name="sex" required>
                 <option value="">Sex</option>
                 <option value="Male" <?=$founder->sex == 'Male' ? 'selected' : ''?>>Male</option>
@@ -53,7 +33,7 @@
             <input type="text" name="state" value="<?=htmlspecialchars((string) $founder->state)?>" placeholder="State">
             <input type="text" name="country" value="<?=htmlspecialchars((string) $founder->country)?>" placeholder="Country">
             <button class="hatchers-cta" type="submit">Save Changes</button>
+            <div class="hatchers-list-subtitle">Sprint and section are compatibility-only fields and are no longer part of the operational workflow.</div>
         </form>
     </div>
 </div>
-

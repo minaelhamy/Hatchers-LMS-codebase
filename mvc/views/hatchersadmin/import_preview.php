@@ -14,6 +14,11 @@
     </div>
 
     <div class="hatchers-detail-section">
+        <div class="hatchers-page-intro">
+            <div class="eyebrow">Validation</div>
+            <div class="title"><?=customCompute($preview_rows) ? count($preview_rows) : 0?> rows ready for review</div>
+            <div class="copy">Rows with validation problems should be corrected in the CSV before importing them into the live Hatchers workflow.</div>
+        </div>
         <div class="hatchers-list">
             <?php
                 $rowsJson = json_encode($preview_rows);
@@ -61,4 +66,3 @@
         </form>
     </div>
 </div>
-

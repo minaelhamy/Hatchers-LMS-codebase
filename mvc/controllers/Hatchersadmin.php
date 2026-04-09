@@ -20,12 +20,11 @@ class Hatchersadmin extends Admin_Controller
     public $studentextend_m;
     public $classes_m;
     public $section_m;
-    public $student_m;
-    public $teacher_m;
     public $founder_task_m;
     public $founder_meeting_m;
     public $founder_learning_m;
     public $milestone_meta_m;
+    public $hatchers_shell_m;
 
     public function __construct()
     {
@@ -45,6 +44,7 @@ class Hatchersadmin extends Admin_Controller
         $this->load->model('founder_meeting_m');
         $this->load->model('founder_learning_m');
         $this->load->model('milestone_meta_m');
+        $this->load->model('hatchers_shell_m');
 
         if ($this->session->userdata('usertypeID') != 1) {
             show_404();
@@ -69,7 +69,7 @@ class Hatchersadmin extends Admin_Controller
             $this->data['founders'] = [];
             $this->data['assignmentMap'] = [];
             $this->data["subview"] = "hatchersadmin/assignments";
-            $this->load->view('_layout_main', $this->data);
+            $this->_render('hatchersadmin/assignments', 'mentoring');
             return;
         }
         $mentors = $this->teacher_m->get_teacher();
@@ -90,8 +90,7 @@ class Hatchersadmin extends Admin_Controller
         $this->data['mentors'] = $mentors;
         $this->data['founders'] = $founders;
         $this->data['assignmentMap'] = $assignmentMap;
-        $this->data["subview"] = "hatchersadmin/assignments";
-        $this->load->view('_layout_main', $this->data);
+        $this->_render('hatchersadmin/assignments', 'mentoring');
     }
 
     public function assign()
@@ -140,8 +139,7 @@ class Hatchersadmin extends Admin_Controller
             $navItems = $this->hatchers_nav_item_m->get_order_by_hatchers_nav_item();
         }
         $this->data['nav_items'] = $navItems;
-        $this->data["subview"] = "hatchersadmin/nav";
-        $this->load->view('_layout_main', $this->data);
+        $this->_render('hatchersadmin/nav', 'ai_tools');
     }
 
     public function nav_save()
@@ -150,11 +148,15 @@ class Hatchersadmin extends Admin_Controller
             redirect('hatchersadmin/nav');
         }
         $id = (int) $this->input->post('hatchers_nav_item_id');
+        $location = trim((string) $this->input->post('location'));
+        if ($location !== 'right_ai') {
+            $location = 'right_ai';
+        }
         $data = [
             'label' => $this->input->post('label'),
             'icon' => $this->input->post('icon'),
             'link' => $this->input->post('link'),
-            'location' => $this->input->post('location'),
+            'location' => $location,
             'sort_order' => (int) $this->input->post('sort_order'),
             'active' => (int) $this->input->post('active')
         ];
@@ -184,8 +186,7 @@ class Hatchersadmin extends Admin_Controller
             $aiSettings = $this->hatcher_ai_settings_m->get_latest_settings();
         }
         $this->data['aiSettings'] = $aiSettings;
-        $this->data["subview"] = "hatchersadmin/ai";
-        $this->load->view('_layout_main', $this->data);
+        $this->_render('hatchersadmin/ai', 'ai_tools');
     }
 
     public function ai_save()
@@ -212,9 +213,6 @@ class Hatchersadmin extends Admin_Controller
 
     public function profiles()
     {
-        $classes = $this->classes_m->get_classes();
-        $sections = $this->section_m->general_get_section();
-
         $this->db->select('student.studentID, student.name, student.email, student.phone, student.username, student.photo, student.classesID, student.sectionID, student.roll');
         $this->db->from('student');
         $this->db->join('studentextend', 'studentextend.studentID = student.studentID', 'LEFT');
@@ -222,12 +220,11 @@ class Hatchersadmin extends Admin_Controller
 
         $mentors = $this->teacher_m->get_teacher();
 
-        $this->data['classes'] = $classes;
-        $this->data['sections'] = $sections;
+        $track = $this->_ensure_default_track();
+        $this->data['defaultTrack'] = $track;
         $this->data['founders'] = $founders;
         $this->data['mentors'] = $mentors;
-        $this->data["subview"] = "hatchersadmin/profiles";
-        $this->load->view('_layout_main', $this->data);
+        $this->_render('hatchersadmin/profiles', 'profiles');
     }
 
     public function create_founder()
@@ -269,11 +266,9 @@ class Hatchersadmin extends Admin_Controller
             redirect('hatchersadmin/profiles');
         }
 
-        $this->data['classes'] = $this->classes_m->get_classes();
-        $this->data['sections'] = $this->section_m->general_get_section();
+        $this->data['defaultTrack'] = $this->_ensure_default_track();
         $this->data['founder'] = $founder;
-        $this->data["subview"] = "hatchersadmin/edit_founder";
-        $this->load->view('_layout_main', $this->data);
+        $this->_render('hatchersadmin/edit_founder', 'profiles');
     }
 
     public function update_founder($founderID = 0)
@@ -293,8 +288,9 @@ class Hatchersadmin extends Admin_Controller
         $phone = trim((string) $this->input->post('phone'));
         $username = trim((string) $this->input->post('username'));
         $password = (string) $this->input->post('password');
-        $classesID = (int) $this->input->post('classesID');
-        $sectionID = (int) $this->input->post('sectionID');
+        $track = $this->_ensure_default_track();
+        $classesID = (int) $track['classesID'];
+        $sectionID = (int) $track['sectionID'];
         $roll = trim((string) $this->input->post('roll'));
         $sex = trim((string) $this->input->post('sex'));
         $address = trim((string) $this->input->post('address'));
@@ -303,9 +299,13 @@ class Hatchersadmin extends Admin_Controller
         $religion = trim((string) $this->input->post('religion'));
         $bloodgroup = trim((string) $this->input->post('bloodgroup'));
 
-        if ($name === '' || $username === '' || $classesID <= 0 || $sectionID <= 0 || $roll === '') {
+        if ($name === '' || $username === '') {
             $this->session->set_flashdata('error', 'Please fill all required fields.');
             redirect('hatchersadmin/edit_founder/' . $founderID);
+        }
+
+        if ($roll === '') {
+            $roll = !empty($founder->roll) ? $founder->roll : ('F-' . $founderID);
         }
 
         if ($username !== $founder->username && !$this->_is_username_available($username)) {
@@ -378,8 +378,7 @@ class Hatchersadmin extends Admin_Controller
         }
 
         $this->data['mentor'] = $mentor;
-        $this->data["subview"] = "hatchersadmin/edit_mentor";
-        $this->load->view('_layout_main', $this->data);
+        $this->_render('hatchersadmin/edit_mentor', 'profiles');
     }
 
     public function update_mentor($mentorID = 0)
@@ -508,8 +507,7 @@ class Hatchersadmin extends Admin_Controller
 
         $this->data['import_type'] = $type;
         $this->data['preview_rows'] = $preview;
-        $this->data["subview"] = "hatchersadmin/import_preview";
-        $this->load->view('_layout_main', $this->data);
+        $this->_render('hatchersadmin/import_preview', 'profiles');
     }
 
     public function import_from_preview()
@@ -552,7 +550,7 @@ class Hatchersadmin extends Admin_Controller
 
     public function download_founder_template()
     {
-        $this->_download_csv('founders_template.csv', ['name', 'email', 'phone', 'username', 'password', 'classesID', 'sectionID', 'roll']);
+        $this->_download_csv('founders_template.csv', ['name', 'email', 'phone', 'username', 'password', 'registerNO', 'sex', 'dob', 'admission_date', 'address', 'state', 'country']);
     }
 
     public function download_mentor_template()
@@ -671,13 +669,17 @@ class Hatchersadmin extends Admin_Controller
             'phone' => trim((string) ($row[2] ?? '')),
             'username' => trim((string) ($row[3] ?? '')),
             'password' => (string) ($row[4] ?? ''),
-            'classesID' => (int) ($row[5] ?? 0),
-            'sectionID' => (int) ($row[6] ?? 0),
-            'roll' => trim((string) ($row[7] ?? ''))
+            'registerNO' => trim((string) ($row[5] ?? '')),
+            'sex' => trim((string) ($row[6] ?? '')),
+            'dob' => trim((string) ($row[7] ?? '')),
+            'admission_date' => trim((string) ($row[8] ?? '')),
+            'address' => trim((string) ($row[9] ?? '')),
+            'state' => trim((string) ($row[10] ?? '')),
+            'country' => trim((string) ($row[11] ?? ''))
         ];
 
         $errors = [];
-        if ($data['name'] === '' || $data['username'] === '' || $data['password'] === '' || $data['classesID'] <= 0 || $data['sectionID'] <= 0 || $data['roll'] === '') {
+        if ($data['name'] === '' || $data['username'] === '' || $data['password'] === '') {
             $errors[] = 'Missing required fields.';
         }
         if ($data['username'] !== '' && !$this->_is_username_available($data['username'])) {
@@ -734,11 +736,15 @@ class Hatchersadmin extends Admin_Controller
         $phone = trim((string) ($row[2] ?? ''));
         $username = trim((string) ($row[3] ?? ''));
         $password = (string) ($row[4] ?? '');
-        $classesID = (int) ($row[5] ?? 0);
-        $sectionID = (int) ($row[6] ?? 0);
-        $roll = trim((string) ($row[7] ?? ''));
+        $registerNO = trim((string) ($row[5] ?? ''));
+        $sex = trim((string) ($row[6] ?? ''));
+        $dob = trim((string) ($row[7] ?? ''));
+        $admissionDate = trim((string) ($row[8] ?? ''));
+        $address = trim((string) ($row[9] ?? ''));
+        $state = trim((string) ($row[10] ?? ''));
+        $country = trim((string) ($row[11] ?? ''));
 
-        if ($name === '' || $username === '' || $password === '' || $classesID <= 0 || $sectionID <= 0 || $roll === '') {
+        if ($name === '' || $username === '' || $password === '') {
             return ['ok' => false, 'message' => 'Missing required fields.'];
         }
         if (!$this->_is_username_available($username)) {
@@ -754,9 +760,13 @@ class Hatchersadmin extends Admin_Controller
             'phone' => $phone,
             'username' => $username,
             'password' => $password,
-            'classesID' => $classesID,
-            'sectionID' => $sectionID,
-            'roll' => $roll
+            'registerNO' => $registerNO,
+            'sex' => $sex,
+            'dob' => $dob,
+            'admission_date' => $admissionDate,
+            'address' => $address,
+            'state' => $state,
+            'country' => $country
         ];
         return $this->_create_founder_record($payload);
     }
@@ -797,7 +807,7 @@ class Hatchersadmin extends Admin_Controller
 
     private function _create_founder_record($payload)
     {
-        $requiredTables = ['student', 'parents', 'studentrelation', 'studentextend'];
+        $requiredTables = ['student', 'studentrelation', 'studentextend'];
         foreach ($requiredTables as $table) {
             if (!$this->db->table_exists($table)) {
                 return ['ok' => false, 'message' => 'Required tables missing. Run DB updates.'];
@@ -809,8 +819,9 @@ class Hatchersadmin extends Admin_Controller
         $phone = trim((string) ($payload['phone'] ?? ''));
         $username = trim((string) ($payload['username'] ?? ''));
         $password = (string) ($payload['password'] ?? '');
-        $classesID = (int) ($payload['classesID'] ?? 0);
-        $sectionID = (int) ($payload['sectionID'] ?? 0);
+        $track = $this->_ensure_default_track();
+        $classesID = (int) ($payload['classesID'] ?? $track['classesID']);
+        $sectionID = (int) ($payload['sectionID'] ?? $track['sectionID']);
         $roll = trim((string) ($payload['roll'] ?? ''));
         $registerNO = trim((string) ($payload['registerNO'] ?? ''));
         $sex = trim((string) ($payload['sex'] ?? ''));
@@ -822,8 +833,12 @@ class Hatchersadmin extends Admin_Controller
         $religion = trim((string) ($payload['religion'] ?? ''));
         $bloodgroup = trim((string) ($payload['bloodgroup'] ?? ''));
 
-        if ($name === '' || $username === '' || $password === '' || $classesID <= 0 || $sectionID <= 0 || $roll === '') {
+        if ($name === '' || $username === '' || $password === '' || $classesID <= 0 || $sectionID <= 0) {
             return ['ok' => false, 'message' => 'Please fill all required fields.'];
+        }
+
+        if ($roll === '') {
+            $roll = 'F-' . date('His');
         }
 
         if (!$this->_is_username_available($username)) {
@@ -832,30 +847,6 @@ class Hatchersadmin extends Admin_Controller
         if ($email !== '' && !$this->_is_email_available($email)) {
             return ['ok' => false, 'message' => 'Email already exists.'];
         }
-
-        $guardianUsername = $username . '_g';
-        $guardianUsername = $this->_unique_username($guardianUsername);
-        $guardianPassword = $password;
-        $guardianID = $this->parents_m->insert_parents([
-            'name' => $name . ' Guardian',
-            'father_name' => '',
-            'mother_name' => '',
-            'father_profession' => '',
-            'mother_profession' => '',
-            'email' => $email,
-            'phone' => $phone,
-            'address' => $address,
-            'username' => $guardianUsername,
-            'password' => $this->student_m->hash($guardianPassword),
-            'usertypeID' => 4,
-            'create_date' => date("Y-m-d H:i:s"),
-            'modify_date' => date("Y-m-d H:i:s"),
-            'create_userID' => $this->session->userdata('loginuserID'),
-            'create_username' => $this->session->userdata('username'),
-            'create_usertype' => $this->session->userdata('usertype'),
-            'active' => 1,
-            'photo' => 'default.png'
-        ]);
 
         $schoolyearID = $this->session->userdata('defaultschoolyearID');
         $studentArray = [
@@ -875,7 +866,7 @@ class Hatchersadmin extends Admin_Controller
             'username' => $username,
             'password' => $this->student_m->hash($password),
             'usertypeID' => 3,
-            'parentID' => $guardianID,
+            'parentID' => 0,
             'library' => 0,
             'hostel' => 0,
             'transport' => 0,
@@ -929,7 +920,7 @@ class Hatchersadmin extends Admin_Controller
 
         return [
             'ok' => true,
-            'message' => 'Founder created. Username: ' . $username . ' | Guardian: ' . $guardianUsername
+            'message' => 'Founder created. Username: ' . $username
         ];
     }
 
@@ -1018,5 +1009,60 @@ class Hatchersadmin extends Admin_Controller
             $tries++;
         }
         return $candidate;
+    }
+
+    private function _ensure_default_track()
+    {
+        $classes = $this->classes_m->general_get_single_classes(['classes' => 'Hatchers AI']);
+        if (!customCompute($classes)) {
+            $classesID = $this->classes_m->insert_classes([
+                'classes' => 'Hatchers AI',
+                'classes_numeric' => 1,
+                'teacherID' => 0,
+                'studentmaxID' => 999999999,
+                'note' => 'Default compatibility sprint for the Hatchers LMS.',
+                'create_date' => date('Y-m-d H:i:s'),
+                'modify_date' => date('Y-m-d H:i:s'),
+                'create_userID' => $this->session->userdata('loginuserID'),
+                'create_username' => $this->session->userdata('username'),
+                'create_usertype' => $this->session->userdata('usertype')
+            ]);
+            $classes = $this->classes_m->general_get_single_classes(['classesID' => $classesID]);
+        }
+
+        $section = $this->section_m->general_get_single_section([
+            'classesID' => $classes->classesID,
+            'section' => 'Default Track'
+        ]);
+        if (!customCompute($section)) {
+            $sectionID = $this->section_m->insert_section([
+                'section' => 'Default Track',
+                'category' => 'Founder Journey',
+                'capacity' => 9999,
+                'classesID' => $classes->classesID,
+                'teacherID' => 0,
+                'note' => 'Hidden compatibility section for Hatchers founders.',
+                'create_date' => date('Y-m-d H:i:s'),
+                'modify_date' => date('Y-m-d H:i:s'),
+                'create_userID' => $this->session->userdata('loginuserID'),
+                'create_username' => $this->session->userdata('username'),
+                'create_usertype' => $this->session->userdata('usertype')
+            ]);
+            $section = $this->section_m->general_get_single_section(['sectionID' => $sectionID]);
+        }
+
+        return [
+            'classesID' => (int) $classes->classesID,
+            'classes' => $classes->classes,
+            'sectionID' => (int) $section->sectionID,
+            'section' => $section->section
+        ];
+    }
+
+    private function _render($subview, $activeNav = 'home', $calendar = [])
+    {
+        $this->data['hatchers_shell'] = $this->hatchers_shell_m->build($activeNav, $calendar);
+        $this->data['subview'] = $subview;
+        $this->load->view('_layout_hatchers', $this->data);
     }
 }
