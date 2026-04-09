@@ -2,17 +2,6 @@
 
 class Hatchers_shell_m extends MY_Model
 {
-    public $session;
-    public $db;
-    public $hatchers_nav_item_m;
-    public $mentor_founder_m;
-    public $teacher_m;
-    public $student_m;
-    public $founder_task_m;
-    public $founder_meeting_m;
-    public $founder_learning_m;
-    public $hatchers_message_m;
-
     public function __construct()
     {
         parent::__construct();
