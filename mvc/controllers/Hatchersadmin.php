@@ -366,7 +366,19 @@ class Hatchersadmin extends Admin_Controller
             ], $founder->parentID);
         }
 
-        $this->session->set_flashdata('success', 'Founder updated.');
+        $syncResult = $this->_sync_founder_access([
+            'name' => $name,
+            'email' => $email,
+            'phone' => $phone,
+            'username' => $username,
+            'previous_username' => (string) $founder->username,
+            'previous_email' => (string) $founder->email,
+            'password' => $password,
+            'company_brief' => $companyBrief,
+            'founder_id' => $founderID,
+        ]);
+
+        $this->session->set_flashdata('success', $this->_append_sync_summary('Founder updated.', $syncResult));
         redirect('hatchersadmin/profiles');
     }
 
@@ -927,9 +939,19 @@ class Hatchersadmin extends Admin_Controller
             'remarks' => $companyBrief
         ]);
 
+        $syncResult = $this->_sync_founder_access([
+            'name' => $name,
+            'email' => $email,
+            'phone' => $phone,
+            'username' => $username,
+            'password' => $password,
+            'company_brief' => $companyBrief,
+            'founder_id' => $studentID,
+        ]);
+
         return [
             'ok' => true,
-            'message' => 'Founder created. Username: ' . $username
+            'message' => $this->_append_sync_summary('Founder created. Username: ' . $username, $syncResult)
         ];
     }
 
@@ -983,6 +1005,100 @@ class Hatchersadmin extends Admin_Controller
             'ok' => true,
             'message' => 'Mentor created. Username: ' . $username
         ];
+    }
+
+    private function _sync_founder_access($payload)
+    {
+        $secret = $this->_sync_env('WEBSITE_PLATFORM_SHARED_SECRET', $this->_sync_env('HATCHERS_SHARED_SECRET', ''));
+        if ($secret === '') {
+            return [
+                'ok' => false,
+                'errors' => ['WEBSITE_PLATFORM_SHARED_SECRET is not configured'],
+            ];
+        }
+
+        $targets = [
+            'Atlas' => rtrim($this->_sync_env('ATLAS_URL', 'https://atlas.hatchers.ai'), '/') . '/hatchers/founder-sync',
+            'Bazaar' => rtrim($this->_sync_env('BAZAAR_URL', 'https://bazaar.hatchers.ai'), '/') . '/api/hatchers/founder-sync',
+            'Servio' => rtrim($this->_sync_env('SERVIO_URL', 'https://servio.hatchers.ai'), '/') . '/api/hatchers/founder-sync',
+        ];
+
+        $errors = [];
+        foreach ($targets as $label => $url) {
+            $result = $this->_post_sync_payload($url, $payload, $secret);
+            if (!$result['ok']) {
+                $errors[] = $label . ': ' . $result['message'];
+            }
+        }
+
+        return [
+            'ok' => empty($errors),
+            'errors' => $errors,
+        ];
+    }
+
+    private function _post_sync_payload($url, $payload, $secret)
+    {
+        $body = json_encode($payload);
+        if ($body === false) {
+            return ['ok' => false, 'message' => 'could not encode sync payload'];
+        }
+
+        $signature = hash_hmac('sha256', $body, $secret);
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'Content-Length: ' . strlen($body),
+            'X-Hatchers-Signature: ' . $signature,
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 20);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+
+        $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($response === false) {
+            return ['ok' => false, 'message' => $curlError !== '' ? $curlError : 'request failed'];
+        }
+
+        $json = json_decode($response, true);
+        if ($status < 200 || $status >= 300 || !is_array($json) || empty($json['success'])) {
+            $message = is_array($json) && !empty($json['error']) ? $json['error'] : ('unexpected response (HTTP ' . $status . ')');
+            return ['ok' => false, 'message' => $message];
+        }
+
+        return ['ok' => true, 'message' => 'synced'];
+    }
+
+    private function _append_sync_summary($message, $syncResult)
+    {
+        if (!is_array($syncResult) || !empty($syncResult['ok'])) {
+            return $message;
+        }
+
+        $errors = isset($syncResult['errors']) && is_array($syncResult['errors'])
+            ? implode(' | ', $syncResult['errors'])
+            : 'unknown sync failure';
+
+        return $message . ' Sync warning: ' . $errors;
+    }
+
+    private function _sync_env($key, $default = '')
+    {
+        $value = getenv($key);
+        if ($value === false && isset($_ENV[$key])) {
+            $value = $_ENV[$key];
+        }
+        if ($value === false && isset($_SERVER[$key])) {
+            $value = $_SERVER[$key];
+        }
+
+        return $value === false ? $default : trim((string) $value);
     }
 
     private function _is_username_available($username)
