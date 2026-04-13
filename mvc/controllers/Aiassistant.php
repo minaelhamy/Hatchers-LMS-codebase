@@ -37,7 +37,8 @@ class Aiassistant extends Admin_Controller
 
     public function chat()
     {
-        if ($this->session->userdata('usertypeID') != 3) {
+        $usertypeID = (int) $this->session->userdata('usertypeID');
+        if (!in_array($usertypeID, [2, 3], true)) {
             show_404();
         }
 
@@ -47,7 +48,11 @@ class Aiassistant extends Admin_Controller
             return;
         }
 
-        $founderID = $this->session->userdata('loginuserID');
+        $founderID = $this->_resolveChatFounderID($usertypeID);
+        if ($founderID <= 0) {
+            $this->_json(['ok' => false, 'error' => 'Founder context is required.']);
+            return;
+        }
 
         if (!$this->db->table_exists('hatcher_ai_conversations')) {
             $this->_json(['ok' => false, 'error' => 'AI tables not installed. Run the Hatchers SQL update first.']);
@@ -58,68 +63,60 @@ class Aiassistant extends Admin_Controller
         if ($this->db->table_exists('hatcher_ai_settings')) {
             $settings = $this->hatcher_ai_settings_m->get_latest_settings();
         }
-        $openaiKey = getenv('OPENAI_API_KEY');
-        if (empty($openaiKey) && isset($_SERVER['OPENAI_API_KEY'])) {
-            $openaiKey = $_SERVER['OPENAI_API_KEY'];
-        }
-        if (empty($openaiKey) && isset($_ENV['OPENAI_API_KEY'])) {
-            $openaiKey = $_ENV['OPENAI_API_KEY'];
-        }
-        if (empty($openaiKey)) {
-            $secretPath = APPPATH . 'config/openai_secret.php';
-            if (file_exists($secretPath)) {
-                $secret = include $secretPath;
-                if (is_array($secret) && !empty($secret['openai_api_key'])) {
-                    $openaiKey = $secret['openai_api_key'];
-                }
-            }
-        }
+        $openaiKey = $this->_getOpenAIKey();
 
         if (empty($openaiKey)) {
             $this->_json(['ok' => false, 'error' => 'OpenAI API key not configured.']);
             return;
         }
 
-        $systemPrompt = customCompute($settings) ? $settings->system_prompt : 'You are Hatchers AI, a friendly mentor for founders.';
-        $guidelines = customCompute($settings) ? $settings->guidelines : 'Be concise, practical, and action-oriented.';
-        $model = customCompute($settings) ? $settings->model : 'gpt-4o-mini';
-        $temperature = customCompute($settings) ? (float) $settings->temperature : 0.7;
-        $maxTokens = customCompute($settings) ? (int) $settings->max_tokens : 600;
-
         $contextText = $this->_buildFounderContext($founderID, $openaiKey);
+        $founder = $this->_getFounderProfile($founderID);
 
-        $history = $this->db->order_by('hatcher_ai_conversation_id', 'DESC')
-            ->limit(6)
-            ->get_where('hatcher_ai_conversations', ['founder_id' => $founderID])
-            ->result();
+        $atlasResponse = $this->_callAtlasAssistant($usertypeID, $founder, $message, $contextText);
+        if ($atlasResponse['ok']) {
+            $reply = $atlasResponse['reply'];
+        } else {
+            $systemPrompt = customCompute($settings) ? $settings->system_prompt : 'You are Hatchers AI, a friendly mentor for founders.';
+            $guidelines = customCompute($settings) ? $settings->guidelines : 'Be concise, practical, and action-oriented.';
+            $model = customCompute($settings) ? $settings->model : 'gpt-4o-mini';
+            $temperature = customCompute($settings) ? (float) $settings->temperature : 0.7;
+            $maxTokens = customCompute($settings) ? (int) $settings->max_tokens : 600;
 
-        $messages = [];
-        if (customCompute($history)) {
-            $history = array_reverse($history);
-            foreach ($history as $row) {
-                $messages[] = [
-                    'role' => $row->role,
-                    'content' => $row->message
-                ];
+            $history = $this->db->order_by('hatcher_ai_conversation_id', 'DESC')
+                ->limit(6)
+                ->get_where('hatcher_ai_conversations', ['founder_id' => $founderID])
+                ->result();
+
+            $messages = [];
+            if (customCompute($history)) {
+                $history = array_reverse($history);
+                foreach ($history as $row) {
+                    $messages[] = [
+                        'role' => $row->role,
+                        'content' => $row->message
+                    ];
+                }
             }
+            $messages[] = ['role' => 'user', 'content' => $message];
+
+            $payload = [
+                'model' => $model,
+                'input' => $messages,
+                'instructions' => trim($systemPrompt . "\n\n" . $guidelines . "\n\nFounder context:\n" . $contextText),
+                'max_output_tokens' => $maxTokens,
+                'temperature' => $temperature
+            ];
+
+            $response = $this->_callOpenAI($openaiKey, $payload);
+            if (!$response['ok']) {
+                $this->_json(['ok' => false, 'error' => $this->_friendlyOpenAIError($response['error'])]);
+                return;
+            }
+
+            $reply = $this->_extractResponseText($response['data']);
         }
-        $messages[] = ['role' => 'user', 'content' => $message];
 
-        $payload = [
-            'model' => $model,
-            'input' => $messages,
-            'instructions' => trim($systemPrompt . "\n\n" . $guidelines . "\n\nFounder context:\n" . $contextText),
-            'max_output_tokens' => $maxTokens,
-            'temperature' => $temperature
-        ];
-
-        $response = $this->_callOpenAI($openaiKey, $payload);
-        if (!$response['ok']) {
-            $this->_json(['ok' => false, 'error' => $this->_friendlyOpenAIError($response['error'])]);
-            return;
-        }
-
-        $reply = $this->_extractResponseText($response['data']);
         if ($reply === '') {
             $reply = "I'm here to help. Could you rephrase that?";
         }
@@ -184,11 +181,7 @@ class Aiassistant extends Admin_Controller
             }
         }
 
-        $this->db->select('student.studentID, student.name, student.email, student.phone, studentextend.remarks');
-        $this->db->from('student');
-        $this->db->join('studentextend', 'studentextend.studentID = student.studentID', 'LEFT');
-        $this->db->where('student.studentID', $founderID);
-        $founder = $this->db->get()->row();
+        $founder = $this->_getFounderProfile($founderID);
 
         $mentorAssignment = $this->mentor_founder_m->get_single_mentor_founder([
             'founder_id' => $founderID,
@@ -412,6 +405,145 @@ class Aiassistant extends Admin_Controller
             return 'Hatchers AI is temporarily unavailable due to billing limits.';
         }
         return $safeDefault;
+    }
+
+    private function _resolveChatFounderID($usertypeID)
+    {
+        if ($usertypeID === 3) {
+            return (int) $this->session->userdata('loginuserID');
+        }
+
+        $founderID = (int) $this->input->post('founder_id');
+        if ($founderID <= 0) {
+            return 0;
+        }
+
+        $assignment = $this->mentor_founder_m->get_single_mentor_founder([
+            'mentor_id' => (int) $this->session->userdata('loginuserID'),
+            'founder_id' => $founderID,
+            'status' => 1
+        ]);
+
+        return customCompute($assignment) ? $founderID : 0;
+    }
+
+    private function _getFounderProfile($founderID)
+    {
+        $this->db->select('student.studentID, student.name, student.email, student.phone, student.username, studentextend.remarks');
+        $this->db->from('student');
+        $this->db->join('studentextend', 'studentextend.studentID = student.studentID', 'LEFT');
+        $this->db->where('student.studentID', $founderID);
+        return $this->db->get()->row();
+    }
+
+    private function _getOpenAIKey()
+    {
+        $openaiKey = getenv('OPENAI_API_KEY');
+        if (empty($openaiKey) && isset($_SERVER['OPENAI_API_KEY'])) {
+            $openaiKey = $_SERVER['OPENAI_API_KEY'];
+        }
+        if (empty($openaiKey) && isset($_ENV['OPENAI_API_KEY'])) {
+            $openaiKey = $_ENV['OPENAI_API_KEY'];
+        }
+        if (empty($openaiKey)) {
+            $secretPath = APPPATH . 'config/openai_secret.php';
+            if (file_exists($secretPath)) {
+                $secret = include $secretPath;
+                if (is_array($secret) && !empty($secret['openai_api_key'])) {
+                    $openaiKey = $secret['openai_api_key'];
+                }
+            }
+        }
+
+        return $openaiKey;
+    }
+
+    private function _callAtlasAssistant($usertypeID, $founder, $message, $contextText)
+    {
+        $sharedSecret = trim((string) getenv('WEBSITE_PLATFORM_SHARED_SECRET'));
+        if ($sharedSecret === '') {
+            return ['ok' => false, 'error' => 'Shared secret missing.'];
+        }
+
+        $username = customCompute($founder) ? trim((string) $founder->username) : '';
+        $email = customCompute($founder) ? trim((string) $founder->email) : '';
+        if ($username === '') {
+            $username = $email !== '' ? preg_replace('/[^a-z0-9_]+/i', '_', strstr($email, '@', true)) : 'founder_' . (int) $this->_resolveChatFounderID($usertypeID);
+        }
+
+        $mentorAssignment = $this->mentor_founder_m->get_single_mentor_founder([
+            'founder_id' => (int) $founder->studentID,
+            'status' => 1
+        ]);
+        $mentor = null;
+        if (customCompute($mentorAssignment)) {
+            $mentor = $this->teacher_m->get_single_teacher(['teacherID' => $mentorAssignment->mentor_id]);
+        }
+
+        $tasks = $this->founder_task_m->get_order_by_founder_task(['founder_id' => (int) $founder->studentID]);
+        $milestones = $this->milestone_meta_m->get_order_by_milestone_meta(['founder_id' => (int) $founder->studentID]);
+        $learning = $this->founder_learning_m->get_order_by_founder_learning(['founder_id' => (int) $founder->studentID]);
+        $meetings = $this->founder_meeting_m->get_order_by_founder_meeting(['founder_id' => (int) $founder->studentID]);
+
+        $payload = [
+            'app' => 'lms',
+            'role' => $usertypeID === 2 ? 'mentor' : 'founder',
+            'current_page' => (string) $this->input->post('current_page'),
+            'message' => $message,
+            'name' => customCompute($founder) ? (string) $founder->name : 'Founder',
+            'username' => $username,
+            'email' => $email,
+            'phone' => customCompute($founder) ? (string) $founder->phone : '',
+            'company_brief' => customCompute($founder) ? (string) $founder->remarks : '',
+            'mentor' => [
+                'name' => customCompute($mentor) ? (string) $mentor->name : '',
+                'mentor_id' => customCompute($mentor) ? (int) $mentor->teacherID : 0,
+            ],
+            'snapshot' => [
+                'workspace' => 'Hatchers LMS mentoring workspace',
+                'context_summary' => $contextText,
+                'task_count' => is_array($tasks) ? count($tasks) : 0,
+                'milestone_count' => is_array($milestones) ? count($milestones) : 0,
+                'learning_count' => is_array($learning) ? count($learning) : 0,
+                'meeting_count' => is_array($meetings) ? count($meetings) : 0,
+            ],
+            'operations' => [
+                'tasks' => $this->_mapTasks($tasks),
+                'milestones' => $this->_mapMilestones($milestones),
+                'learning' => $this->_mapLearning($learning),
+                'meetings' => $this->_mapMeetings($meetings),
+            ],
+            'sync_summary' => 'LMS founder context refreshed from mentoring data.',
+        ];
+
+        $json = json_encode($payload);
+        $ch = curl_init('https://atlas.hatchers.ai/hatchers/assistant/chat');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'X-Hatchers-Signature: ' . hash_hmac('sha256', $json, $sharedSecret)
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 45);
+
+        $result = curl_exec($ch);
+        if ($result === false) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            return ['ok' => false, 'error' => $error];
+        }
+
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        $data = json_decode($result, true);
+
+        if ($status >= 400 || !is_array($data) || empty($data['success'])) {
+            $message = is_array($data) && isset($data['error']) ? $data['error'] : 'Atlas assistant request failed.';
+            return ['ok' => false, 'error' => $message];
+        }
+
+        return ['ok' => true, 'reply' => isset($data['reply']) ? (string) $data['reply'] : ''];
     }
 
     private function _json($payload)

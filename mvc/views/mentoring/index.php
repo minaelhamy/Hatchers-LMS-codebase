@@ -42,6 +42,82 @@
             <?php } ?>
         </div>
 
+        <?php if (!$isFounder) { ?>
+            <section class="hatchers-card-panel" style="margin-bottom: 18px;">
+                <div class="hatchers-panel-title">Atlas Mentor Copilot</div>
+                <div class="hatchers-line-copy" style="margin-bottom: 14px;">Ask Atlas for a status summary, blocker scan, or the next best actions for <?=htmlspecialchars($founderName)?>.</div>
+                <div id="atlas-mentor-thread" class="hatchers-chat-thread" style="max-height: 260px; margin-bottom: 12px;">
+                    <div class="hatchers-chat-row">
+                        <div class="bubble">I’m Atlas. Ask for a founder summary, blockers, next priorities, or how to guide this founder across LMS, Bazaar, Servio, and Atlas.</div>
+                    </div>
+                </div>
+                <form id="atlas-mentor-form" class="hatchers-inline-form">
+                    <input type="hidden" name="founder_id" value="<?=$threadFounder->studentID?>">
+                    <input type="text" name="message" placeholder="Ask Atlas about this founder..." required>
+                    <button class="hatchers-inline-btn" type="submit">Ask Atlas</button>
+                </form>
+            </section>
+
+            <script type="text/javascript">
+                (function () {
+                    var form = document.getElementById('atlas-mentor-form');
+                    var thread = document.getElementById('atlas-mentor-thread');
+                    if (!form || !thread) {
+                        return;
+                    }
+
+                    function escapeHtml(text) {
+                        return String(text || '')
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#039;');
+                    }
+
+                    function appendBubble(text, own) {
+                        var row = document.createElement('div');
+                        row.className = 'hatchers-chat-row' + (own ? ' is-own' : '');
+                        row.innerHTML = '<div class="bubble">' + escapeHtml(text).replace(/\n/g, '<br>') + '</div>';
+                        thread.appendChild(row);
+                        thread.scrollTop = thread.scrollHeight;
+                    }
+
+                    form.addEventListener('submit', function (event) {
+                        event.preventDefault();
+
+                        var input = form.querySelector('input[name="message"]');
+                        var button = form.querySelector('button');
+                        var founderId = form.querySelector('input[name="founder_id"]').value;
+                        var message = input.value.replace(/^\s+|\s+$/g, '');
+
+                        if (!message) {
+                            return;
+                        }
+
+                        appendBubble(message, true);
+                        input.value = '';
+                        button.disabled = true;
+                        button.textContent = 'Thinking...';
+
+                        $.post('<?=base_url('aiassistant/chat')?>', {
+                            message: message,
+                            founder_id: founderId,
+                            current_page: window.location.pathname + window.location.search
+                        }, function (res) {
+                            appendBubble(res && res.reply ? res.reply : 'Atlas could not answer right now.', false);
+                        }, 'json').fail(function (xhr) {
+                            var response = xhr && xhr.responseJSON ? xhr.responseJSON : {};
+                            appendBubble(response.error ? response.error : 'Atlas could not answer right now.', false);
+                        }).always(function () {
+                            button.disabled = false;
+                            button.textContent = 'Ask Atlas';
+                        });
+                    });
+                })();
+            </script>
+        <?php } ?>
+
         <div class="hatchers-two-column">
             <section class="hatchers-card-panel">
                 <div class="hatchers-panel-title">Meetings</div>
